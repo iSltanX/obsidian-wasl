@@ -1,0 +1,664 @@
+[
+  {
+    "id": "h01",
+    "kind": "match",
+    "doc": "الذاكرةُ خائنة",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الذاكرةُ"
+    },
+    "why": "حركة في آخر الكلمة"
+  },
+  {
+    "id": "h02",
+    "kind": "match",
+    "doc": "وبالذاكرة نعيش",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "وبالذاكرة"
+    },
+    "why": "سوابق و+ب على «ال»"
+  },
+  {
+    "id": "h03",
+    "kind": "match",
+    "doc": "فللذاكرة حيلها",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "فللذاكرة"
+    },
+    "why": "ف ثم لام الجر مع «ال» = «فلل»"
+  },
+  {
+    "id": "h04",
+    "kind": "match",
+    "doc": "ذاكرةٌ مثقوبة",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "ذاكرةٌ"
+    },
+    "why": "نكرة والعنوان معرّف"
+  },
+  {
+    "id": "h05",
+    "kind": "match",
+    "doc": "الحريـــة مسؤولية",
+    "target": {
+      "title": "الحرية",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحرية.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الحريـــة"
+    },
+    "why": "تطويل متكرر"
+  },
+  {
+    "id": "h06",
+    "kind": "match",
+    "doc": "كالحرية تمامًا",
+    "target": {
+      "title": "الحرية",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحرية.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "كالحرية"
+    },
+    "why": "كاف التشبيه مع «ال»"
+  },
+  {
+    "id": "h07",
+    "kind": "match",
+    "doc": "ﺍﻟﺤﺮﻳﺔ أولًا",
+    "target": {
+      "title": "الحرية",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحرية.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "ﺍﻟﺤﺮﻳﺔ"
+    },
+    "why": "أشكال عرض"
+  },
+  {
+    "id": "h08",
+    "kind": "match",
+    "doc": "إبداع بلا جمهور",
+    "target": {
+      "title": "الإبداع",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الإبداع.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "إبداع"
+    },
+    "why": "نكرة والعنوان معرّف؛ الهمزة نفسها"
+  },
+  {
+    "id": "h09",
+    "kind": "match",
+    "doc": "ابداع الأطفال",
+    "target": {
+      "title": "الإبداع",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الإبداع.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "ابداع"
+    },
+    "why": "نكرة مع همزة أولى محذوفة"
+  },
+  {
+    "id": "h10",
+    "kind": "match",
+    "doc": "والابداع عادة",
+    "target": {
+      "title": "الإبداع",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الإبداع.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "والابداع"
+    },
+    "why": "سابقة و+ال مع همزة أولى محذوفة"
+  },
+  {
+    "id": "h11",
+    "kind": "match",
+    "doc": "مؤتمر ٢٠٢٥ انتهى",
+    "target": {
+      "title": "مؤتمر 2025",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "مؤتمر 2025.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "مؤتمر ٢٠٢٥"
+    },
+    "why": "أرقام عربية في عنوان من كلمتين"
+  },
+  {
+    "id": "h12",
+    "kind": "match",
+    "doc": "مؤتمر ۲۰۲۵ انتهى",
+    "target": {
+      "title": "مؤتمر 2025",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "مؤتمر 2025.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "مؤتمر ۲۰۲۵"
+    },
+    "why": "أرقام فارسية"
+  },
+  {
+    "id": "h13",
+    "kind": "match",
+    "doc": "أحب الكتابة بالـMarkdown",
+    "target": {
+      "title": "Markdown",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "Markdown.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "بالـMarkdown"
+    },
+    "why": "سابقة عربية وتطويل قبل كلمة لاتينية"
+  },
+  {
+    "id": "h14",
+    "kind": "match",
+    "doc": "markdown سهل",
+    "target": {
+      "title": "Markdown",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "Markdown.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "markdown"
+    },
+    "why": "حالة الأحرف اللاتينية"
+  },
+  {
+    "id": "h15",
+    "kind": "match",
+    "doc": "والرواقية فلسفة عملية",
+    "target": {
+      "title": "Stoicism",
+      "aliases": [
+        "الرواقية"
+      ],
+      "exactOnly": false,
+      "path": "Stoicism.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "والرواقية"
+    },
+    "why": "اسم بديل عربي مع سابقة"
+  },
+  {
+    "id": "h16",
+    "kind": "match",
+    "doc": "للذاكرة الجمعية أثر",
+    "target": {
+      "title": "الذاكرة الجمعية",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الذاكرة الجمعية.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "للذاكرة الجمعية"
+    },
+    "why": "«لل» على عنوان من كلمتين"
+  },
+  {
+    "id": "h17",
+    "kind": "match",
+    "doc": "الحریة قيمة",
+    "target": {
+      "title": "الحرية",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحرية.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الحریة"
+    },
+    "why": "ياء فارسية"
+  },
+  {
+    "id": "h18",
+    "kind": "match",
+    "doc": "‏المعرفة قوة",
+    "target": {
+      "title": "المعرفة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المعرفة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "المعرفة"
+    },
+    "why": "علامة اتجاه خفية قبل الكلمة"
+  },
+  {
+    "id": "h19",
+    "kind": "match",
+    "doc": "Memory matters",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "Memory"
+    },
+    "why": "اسم بديل لاتيني بحالة مختلفة"
+  },
+  {
+    "id": "h20",
+    "kind": "match",
+    "doc": "قرأتُ الذاكرات القديمة",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "جمع؛ خارج المطابقة الآلية"
+  },
+  {
+    "id": "h21",
+    "kind": "match",
+    "doc": "ذاكرته ضعيفة",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "لاحقة ضميرية مع قلب ة إلى ت"
+  },
+  {
+    "id": "h22",
+    "kind": "match",
+    "doc": "ورد الربيع",
+    "target": {
+      "title": "رد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "رد.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "لا نزع عن نواة من حرفين"
+  },
+  {
+    "id": "h23",
+    "kind": "match",
+    "doc": "كلام كثير",
+    "target": {
+      "title": "لام",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "لام.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "سابقة مفردة على نواة من ثلاثة أحرف"
+  },
+  {
+    "id": "h24",
+    "kind": "match",
+    "doc": "وبيته بعيد",
+    "target": {
+      "title": "بيت",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "بيت.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "لاحقة ضميرية"
+  },
+  {
+    "id": "h25",
+    "kind": "match",
+    "doc": "فنون الخط",
+    "target": {
+      "title": "فن",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "فن.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "جمع على نواة من حرفين"
+  },
+  {
+    "id": "h26",
+    "kind": "match",
+    "doc": "قال مصطفي",
+    "target": {
+      "title": "مصطفى",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "مصطفى.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "ى/ي في آخر الكلمة"
+  },
+  {
+    "id": "h27",
+    "kind": "match",
+    "doc": "الصلاه نور",
+    "target": {
+      "title": "الصلاة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الصلاة.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "ة/ه في آخر الكلمة"
+  },
+  {
+    "id": "h28",
+    "kind": "match",
+    "doc": "مسالة صعبة",
+    "target": {
+      "title": "مسألة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "مسألة.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "همزة وسطى محذوفة"
+  },
+  {
+    "id": "h29",
+    "kind": "match",
+    "doc": "النور يملأ الغرفة",
+    "target": {
+      "title": "نور",
+      "aliases": [],
+      "exactOnly": true,
+      "path": "نور.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "اسم علم بوضع «مطابقة تامة فقط»"
+  },
+  {
+    "id": "h30",
+    "kind": "match",
+    "doc": "حَبُّ القمح",
+    "target": {
+      "title": "حُبّ",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "حُبّ.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "تشكيل متعارض في الحرف الأول"
+  },
+  {
+    "id": "h31",
+    "kind": "match",
+    "doc": "حب كبير",
+    "target": {
+      "title": "حُبّ",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "حُبّ.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "حب",
+      "flags": [
+        "unvocalized"
+      ]
+    },
+    "why": "العنوان مشكول عمدًا والنص غير مشكول"
+  },
+  {
+    "id": "h32",
+    "kind": "context",
+    "doc": "استعمل `الذاكرة` هنا",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل كود مضمّن"
+  },
+  {
+    "id": "h33",
+    "kind": "context",
+    "doc": "[الذاكرة](https://example.com)",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل رابط Markdown"
+  },
+  {
+    "id": "h34",
+    "kind": "context",
+    "doc": "![[الذاكرة]]",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل تضمين"
+  },
+  {
+    "id": "h35",
+    "kind": "context",
+    "doc": "%% الذاكرة %%",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل تعليق"
+  },
+  {
+    "id": "h36",
+    "kind": "context",
+    "doc": "> [!note]\n> الذاكرة تخون",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الذاكرة",
+      "flags": [
+        "quote"
+      ]
+    },
+    "why": "داخل وسم تنبيه: يُعرض موسومًا"
+  },
+  {
+    "id": "h37",
+    "kind": "context",
+    "doc": "#الذاكرة",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "وسم"
+  },
+  {
+    "id": "h38",
+    "kind": "context",
+    "doc": "https://example.com/الذاكرة",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل رابط مجرد"
+  },
+  {
+    "id": "h39",
+    "kind": "context",
+    "doc": "## عن الذاكرة\n\nنص محايد.",
+    "target": {
+      "title": "الذاكرة",
+      "aliases": [
+        "memory"
+      ],
+      "exactOnly": false,
+      "path": "الذاكرة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "عنوان قسم"
+  }
+]

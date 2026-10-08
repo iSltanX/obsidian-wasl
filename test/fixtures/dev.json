@@ -1,0 +1,576 @@
+[
+  {
+    "id": "d01",
+    "kind": "match",
+    "doc": "الكتابة فعلُ نجاة",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الكتابة"
+    },
+    "why": "تطابق تام؛ الحركة على الكلمة التالية",
+    "studyRef": 1
+  },
+  {
+    "id": "d02",
+    "kind": "match",
+    "doc": "وبالكتابةِ أفهم نفسي",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "وبالكتابةِ"
+    },
+    "why": "سوابق و+ب على «ال»",
+    "studyRef": 2
+  },
+  {
+    "id": "d03",
+    "kind": "match",
+    "doc": "للكتابة طقوسها",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "للكتابة"
+    },
+    "why": "لام الجر مع «ال» تُكتب «لل»",
+    "studyRef": 3
+  },
+  {
+    "id": "d04",
+    "kind": "match",
+    "doc": "كتابةٌ بلا جمهور",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "كتابةٌ"
+    },
+    "why": "العنوان معرّف والنص نكرة",
+    "studyRef": 4
+  },
+  {
+    "id": "d05",
+    "kind": "match",
+    "doc": "الجسـد يتذكر",
+    "target": {
+      "title": "الجسد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الجسد.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الجسـد"
+    },
+    "why": "تطويل",
+    "studyRef": 5
+  },
+  {
+    "id": "d06",
+    "kind": "match",
+    "doc": "ﺍﻟﺠﺴﺪ لا ينسى",
+    "target": {
+      "title": "الجسد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الجسد.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "ﺍﻟﺠﺴﺪ"
+    },
+    "why": "أشكال عرض منسوخة من PDF",
+    "studyRef": 6
+  },
+  {
+    "id": "d07",
+    "kind": "match",
+    "doc": "رؤية ٢٠٣٠ طموحة",
+    "target": {
+      "title": "رؤية 2030",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "رؤية 2030.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "رؤية ٢٠٣٠"
+    },
+    "why": "أرقام عربية مقابل لاتينية",
+    "studyRef": 7
+  },
+  {
+    "id": "d08",
+    "kind": "match",
+    "doc": "تعلّمتُ بالـPython",
+    "target": {
+      "title": "Python",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "Python.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "بالـPython"
+    },
+    "why": "سابقة عربية وتطويل قبل كلمة لاتينية",
+    "studyRef": 8
+  },
+  {
+    "id": "d09",
+    "kind": "match",
+    "doc": "انسان المدينة",
+    "target": {
+      "title": "الإنسان",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الإنسان.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "انسان"
+    },
+    "why": "همزة أولى محذوفة ونكرة",
+    "studyRef": 9
+  },
+  {
+    "id": "d10",
+    "kind": "match",
+    "doc": "والظاهراتية عندي ممارسة",
+    "target": {
+      "title": "الفينومينولوجيا",
+      "aliases": [
+        "الظاهراتية"
+      ],
+      "exactOnly": false,
+      "path": "الفينومينولوجيا.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "والظاهراتية"
+    },
+    "why": "عبر الاسم البديل مع سابقة و+ال",
+    "studyRef": 10
+  },
+  {
+    "id": "d11",
+    "kind": "match",
+    "doc": "بالكتابةِ الحسية تبدأ القصيدة",
+    "target": {
+      "title": "الكتابة الحسية",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الكتابة الحسية.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "بالكتابةِ الحسية"
+    },
+    "why": "عنوان من كلمتين؛ السابقة على الأولى فقط",
+    "studyRef": 11
+  },
+  {
+    "id": "d12",
+    "kind": "match",
+    "doc": "Writing is breathing",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "Writing"
+    },
+    "why": "اسم بديل لاتيني دون حساسية لحالة الأحرف",
+    "studyRef": 12
+  },
+  {
+    "id": "d13",
+    "kind": "match",
+    "doc": "قرأتُ الكتابَ",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "«كتاب» كلمة أخرى",
+    "studyRef": 13
+  },
+  {
+    "id": "d14",
+    "kind": "match",
+    "doc": "أعجبني كتابه",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "ه/ة في الآخر: كتاب + ضمير",
+    "studyRef": 14
+  },
+  {
+    "id": "d15",
+    "kind": "match",
+    "doc": "الوجود سابق",
+    "target": {
+      "title": "جود",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "جود.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "الواو أصلية",
+    "studyRef": 15
+  },
+  {
+    "id": "d16",
+    "kind": "match",
+    "doc": "البحر هادئ",
+    "target": {
+      "title": "حر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "حر.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "لا نزع عن نواة من حرفين",
+    "studyRef": 16
+  },
+  {
+    "id": "d17",
+    "kind": "match",
+    "doc": "كمال الصنعة",
+    "target": {
+      "title": "مال",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "مال.md"
+    },
+    "expect": {
+      "layer": null,
+      "acceptable": [
+        2
+      ]
+    },
+    "why": "الكاف أصلية؛ سابقة مفردة على نواة من ثلاثة أحرف",
+    "studyRef": 17
+  },
+  {
+    "id": "d18",
+    "kind": "match",
+    "doc": "سافر على عجل",
+    "target": {
+      "title": "علي",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "علي.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "ى/ي في كلمة قصيرة واسم علم",
+    "studyRef": 18
+  },
+  {
+    "id": "d19",
+    "kind": "match",
+    "doc": "السلطان العثماني",
+    "target": {
+      "title": "سلطان",
+      "aliases": [],
+      "exactOnly": true,
+      "path": "سلطان.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "ملاحظة اسم علم بوضع «مطابقة تامة فقط»",
+    "studyRef": 19
+  },
+  {
+    "id": "d20",
+    "kind": "match",
+    "doc": "سال الماء",
+    "target": {
+      "title": "سأل",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "سأل.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "همزة وسطى؛ كلمتان مختلفتان",
+    "studyRef": 20
+  },
+  {
+    "id": "d21",
+    "kind": "match",
+    "doc": "عِلْمُ الجمال",
+    "target": {
+      "title": "عَلَم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "عَلَم.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "تشكيل متعارض في الحرف نفسه",
+    "studyRef": 21
+  },
+  {
+    "id": "d22",
+    "kind": "match",
+    "doc": "علم الجمال",
+    "target": {
+      "title": "عَلَم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "عَلَم.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "علم",
+      "flags": [
+        "unvocalized"
+      ]
+    },
+    "why": "العنوان مشكول عمدًا والنص يحتمل",
+    "studyRef": 22
+  },
+  {
+    "id": "d23",
+    "kind": "context",
+    "doc": "```\nالكتابة\n```",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل كتلة كود",
+    "studyRef": 23
+  },
+  {
+    "id": "d24",
+    "kind": "context",
+    "doc": "[[مدونتي|الكتابة]]",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل رابط موجود",
+    "studyRef": 24
+  },
+  {
+    "id": "d25",
+    "kind": "context",
+    "doc": "---\nموضوع: الكتابة\n---\nنص محايد.",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "داخل الخصائص",
+    "studyRef": 25
+  },
+  {
+    "id": "d26",
+    "kind": "context",
+    "doc": "الكتابة هنا داخل الملاحظة نفسها.",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "source": "الكتابة.md",
+    "why": "داخل الملاحظة الهدف نفسها",
+    "studyRef": 26
+  },
+  {
+    "id": "d27",
+    "kind": "context",
+    "doc": "## الكتابة والجسد\n\nنص محايد.",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "عنوان قسم؛ مستثنى افتراضيًا (القرار ٦)",
+    "studyRef": 27
+  },
+  {
+    "id": "d28",
+    "kind": "context",
+    "doc": "> الكتابة نجاة",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الكتابة",
+      "flags": [
+        "quote"
+      ]
+    },
+    "why": "داخل اقتباس: يُعرض موسومًا (القرار ٥)",
+    "studyRef": 28
+  },
+  {
+    "id": "d29",
+    "kind": "context",
+    "doc": "| المفهوم | الوصف |\n|---|---|\n| الكتابة | فعل |",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الكتابة",
+      "flags": [
+        "table"
+      ]
+    },
+    "why": "داخل جدول: يُقترح ويُهرَّب | عند الكتابة",
+    "studyRef": 29
+  },
+  {
+    "id": "d30",
+    "kind": "context",
+    "doc": "[[الكتابة]] أولًا، ثم الكتابة مرة ثانية.",
+    "target": {
+      "title": "الكتابة",
+      "aliases": [
+        "writing"
+      ],
+      "exactOnly": false,
+      "path": "الكتابة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الكتابة",
+      "flags": [
+        "already-linked"
+      ]
+    },
+    "why": "الموضع الثاني في ملاحظة مربوطة بالهدف",
+    "studyRef": 30
+  },
+  {
+    "id": "d31",
+    "kind": "vault",
+    "doc": "المعنى يتشكل بالتكرار.",
+    "target": {
+      "title": "المعنى",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "مجلد أ/المعنى.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "المعنى",
+      "flags": [
+        "ambiguous-target"
+      ]
+    },
+    "vault": [
+      "مجلد أ/المعنى.md",
+      "مجلد ب/المعنى.md"
+    ],
+    "why": "ملاحظتان بالاسم نفسه في مجلدين",
+    "studyRef": 31
+  }
+]
