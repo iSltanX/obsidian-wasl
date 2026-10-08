@@ -2,7 +2,10 @@
 // ت٠: مسح قراءة فقط لخزينة Obsidian، يقيس مكسب «وصل» فوق المطابقة الحرفية.
 //
 // الاستخدام:
-//   node scripts/t0-survey.mjs <مسار-الخزينة> [--exclude مجلد1,مجلد2] [--sample 100] [--seed 1] [--include-numeric]
+//   node scripts/t0-survey.mjs <مسار-الخزينة> [--exclude مجلد1,مجلد2] [--sample 100] [--seed 1] [--include-numeric] [--titles ملف]
+//
+// --titles: ملف فيه عنوان في كل سطر (وأسماء بديلة بعد «|»). يحلّ محل عناوين الملفات، ليقيس الخزينة
+//           كأن فيها ملاحظة لكل عنوان. مفيد حين تكون عناوين الملفات تقنية لا تُذكر في النص.
 //   node scripts/t0-survey.mjs --score local/t0/sample.tsv
 //
 // الضمانات:
@@ -213,12 +216,13 @@ const linkKey = (target) => normalizeA(target.split("/").pop().replace(/\.md$/i,
 
 // ───────────────────────── فهرس العناوين ─────────────────────────
 
-function buildIndex(files, includeNumeric) {
+function buildIndex(files, includeNumeric, virtual) {
   const titles = new Map(); // titleKey -> {id, name, paths:Set, aliases:[]}
   const stats = { numericSkipped: 0, duplicates: 0, aliasCount: 0, notesWithAliases: 0 };
   for (const f of files) {
     const raw = readFileSync(f.path, "utf8");
     f.raw = raw;
+    if (virtual) continue;
     const key = normalizeA(f.title).norm;
     if (!includeNumeric && !hasLetter(key)) { stats.numericSkipped++; continue; }
     let t = titles.get(key);
@@ -226,6 +230,13 @@ function buildIndex(files, includeNumeric) {
     else { t = { id: titles.size, name: f.title, key, paths: new Set([f.rel]), aliases: [] }; titles.set(key, t); }
     const aliases = parseAliases(raw);
     if (aliases.length) { stats.notesWithAliases++; stats.aliasCount += aliases.length; t.aliases.push(...aliases); }
+  }
+
+  for (const line of virtual ?? []) {
+    const [name, ...aliases] = line.split("|").map((x) => x.trim()).filter(Boolean);
+    const key = normalizeA(name).norm;
+    if (!titles.has(key)) titles.set(key, { id: titles.size, name, key, paths: new Set(), aliases });
+    if (aliases.length) { stats.notesWithAliases++; stats.aliasCount += aliases.length; }
   }
 
   const coreMap = new Map();
@@ -376,7 +387,8 @@ function survey(vault, opts) {
   const root = resolve(vault);
   if (resolve(OUT).startsWith(root + sep)) throw new Error("مجلد المخرجات داخل الخزينة؛ أوقفتُ التنفيذ كي لا أكتب فيها.");
   const files = walk(root, root, opts.exclude, []);
-  const index = buildIndex(files, opts.includeNumeric);
+  const virtual = opts.titles ? readFileSync(opts.titles, "utf8").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")) : null;
+  const index = buildIndex(files, opts.includeNumeric, virtual);
   const all = [];
   const notesById = new Map();
   for (const f of files) {
@@ -474,7 +486,7 @@ function survey(vault, opts) {
 
 - **التاريخ:** ${new Date().toISOString().slice(0, 10)}
 - **مدة المسح:** ${ar((ms / 1000).toFixed(1))} ث على الحاسوب
-- **الإعدادات:** عيّنة ${ar(opts.sample)}، بذرة ${ar(opts.seed)}، مجلدات مستثناة: ${opts.exclude.length ? opts.exclude.length : "لا شيء"}${opts.includeNumeric ? "، العناوين الرقمية مشمولة" : ""}
+- **الإعدادات:** عيّنة ${ar(opts.sample)}، بذرة ${ar(opts.seed)}، مجلدات مستثناة: ${opts.exclude.length ? opts.exclude.length : "لا شيء"}${opts.includeNumeric ? "، العناوين الرقمية مشمولة" : ""}${virtual ? `، **عناوين افتراضية** (${ar(virtual.length)}) بدل عناوين الملفات` : ""}
 
 ## الخزينة
 
@@ -599,5 +611,6 @@ if (args[0] === "--score") {
     sample: Number(flag("--sample", 100)),
     seed: Number(flag("--seed", 1)),
     includeNumeric: args.includes("--include-numeric"),
+    titles: flag("--titles", null),
   });
 }
