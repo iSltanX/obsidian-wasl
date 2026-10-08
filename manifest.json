@@ -1,0 +1,10 @@
+{
+  "id": "wasl",
+  "name": "Wasl",
+  "version": "0.0.1",
+  "minAppVersion": "1.6.0",
+  "description": "Arabic-aware unlinked mentions: finds «وبالكتابةِ» for «الكتابة», shows why, and links only with your approval.",
+  "author": "Sultan Al-Anzi",
+  "authorUrl": "https://github.com/iSltanX",
+  "isDesktopOnly": false
+}
