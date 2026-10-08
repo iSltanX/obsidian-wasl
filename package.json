@@ -11,6 +11,7 @@
     "test": "vitest run",
     "check": "tsc --noEmit && vitest run && node esbuild.config.mjs production",
     "t0": "node scripts/t0-survey.mjs",
+    "metrics": "node scripts/core-metrics.mjs",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "prepare": "git config core.hooksPath .githooks || true"
   },
