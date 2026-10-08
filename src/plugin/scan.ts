@@ -146,6 +146,13 @@ export class Scan {
   done = 0;
   total = 0;
   failed = 0;
+  /** أحرف النصوص المقروءة (لا المأخوذة من الذاكرة). */
+  chars = 0;
+  /** زمن العمل في الدفعات بلا الهدنات، وزمن البحث كله؛ للقياس (ت٣). */
+  busyMs = 0;
+  wallMs = 0;
+  /** أطول دفعة متصلة: ما قد تتجمد فيه الواجهة. ملف واحد لا يُقسم، فهي لا تقل عن أبطأ ملف. */
+  maxBatchMs = 0;
   state: ScanState = "running";
 
   constructor(
@@ -179,7 +186,8 @@ export class Scan {
       .filter((s) => s.path !== this.target.note.path)
       .sort((a, b) => comparePaths(a.path, b.path));
     this.total = sources.length;
-    let batchStart = now();
+    const started = now();
+    let batchStart = started;
     for (const src of sources) {
       if (this.state !== "running") return this.state;
       const hit = this.cache.get(this.target.sig, src.path, src.mtime);
@@ -191,14 +199,22 @@ export class Scan {
       }
       this.done++;
       if (now() - batchStart >= budget) {
+        this.endBatch(now() - batchStart);
         onProgress(this);
         await pause();
         batchStart = now();
       }
     }
+    this.endBatch(now() - batchStart);
+    this.wallMs = now() - started;
     if (this.state === "running") this.state = "done";
     onProgress(this);
     return this.state;
+  }
+
+  private endBatch(ms: number): void {
+    this.busyMs += ms;
+    if (ms > this.maxBatchMs) this.maxBatchMs = ms;
   }
 
   /** يمسح ملفًا واحدًا ويحفظ نتيجته؛ يُستعمل أيضًا لتحديث ملف تغيّر بعد انتهاء المسح. */
@@ -206,6 +222,7 @@ export class Scan {
     let result: FileResult;
     try {
       const text = await this.host.read(src.path);
+      this.chars += text.length;
       result = { path: src.path, mtime: src.mtime, items: scanText(this.target, src.path, text, this.host.metadata(src.path)) };
     } catch (e) {
       // ملف لا يُقرأ أو نص أفشل النواة: يُعدّ ويُتخطى، والبحث يكمل

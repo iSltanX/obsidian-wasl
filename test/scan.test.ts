@@ -155,3 +155,23 @@ describe("Scan order and failure", () => {
     expect(state).toBe("failed");
   });
 });
+
+describe("Scan measurement", () => {
+  it("separates busy time from pauses and counts characters read", async () => {
+    let t = 0;
+    const files: Record<string, string> = { "أ.md": "الكتابة", "ب.md": "نص", "ج.md": "نص آخر" };
+    const scan = new Scan(target, host(files).h, new ResultCache(), {
+      budgetMs: 5,
+      now: () => (t += 3),
+      pause: async () => {
+        t += 100;
+      },
+    });
+    await scan.run();
+    expect(scan.chars).toBe(7 + 2 + 6);
+    expect(scan.wallMs).toBeGreaterThan(100);
+    expect(scan.busyMs).toBeLessThan(scan.wallMs - 100);
+    expect(scan.maxBatchMs).toBeGreaterThanOrEqual(5);
+    expect(scan.maxBatchMs).toBeLessThanOrEqual(scan.busyMs);
+  });
+});
