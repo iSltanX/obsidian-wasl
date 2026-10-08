@@ -175,3 +175,83 @@ describe("Scan measurement", () => {
     expect(scan.maxBatchMs).toBeLessThanOrEqual(scan.busyMs);
   });
 });
+
+describe("Scan races from review", () => {
+  it("skips a file that vanished without counting a failure", async () => {
+    const h: ScanHost = {
+      sources: () => [{ path: "أ.md", mtime: 1 }, { path: "ب.md", mtime: 1 }],
+      read: async (path) => (path === "أ.md" ? null : "الكتابة"),
+      metadata: () => undefined,
+    };
+    const scan = new Scan(target, h, new ResultCache(), instant);
+    await scan.run();
+    expect(scan.failed).toBe(0);
+    expect([...scan.results.keys()]).toEqual(["ب.md"]);
+  });
+
+  it("does not bring back a file forgotten while it was being read", async () => {
+    let release: (v: string) => void = () => {};
+    const h: ScanHost = {
+      sources: () => [],
+      read: () => new Promise<string>((r) => (release = r)),
+      metadata: () => undefined,
+    };
+    const scan = new Scan(target, h, new ResultCache(), instant);
+    const pending = scan.scanFile({ path: "أ.md", mtime: 1 });
+    scan.forget("أ.md");
+    release("الكتابة");
+    expect(await pending).toBeNull();
+    expect(scan.results.has("أ.md")).toBe(false);
+  });
+
+  it("keeps the newer of two overlapping reads of one file", async () => {
+    const releases: ((v: string) => void)[] = [];
+    const h: ScanHost = {
+      sources: () => [],
+      read: () => new Promise<string>((r) => releases.push(r)),
+      metadata: () => undefined,
+    };
+    const scan = new Scan(target, h, new ResultCache(), instant);
+    const older = scan.scanFile({ path: "أ.md", mtime: 1 });
+    const newer = scan.scanFile({ path: "أ.md", mtime: 2 });
+    releases[1]?.("الكتابة والكتابة");
+    await newer;
+    releases[0]?.("نص قديم");
+    await older;
+    expect(scan.results.get("أ.md")?.mtime).toBe(2);
+    expect(scan.results.get("أ.md")?.items.length).toBe(2);
+  });
+
+  it("moves a result on rename", () => {
+    const scan = new Scan(target, host({}).h, new ResultCache(), instant);
+    scan.results.set("قديم.md", { path: "قديم.md", mtime: 1, items: [] });
+    scan.move("قديم.md", "جديد.md");
+    expect([...scan.results.keys()]).toEqual(["جديد.md"]);
+  });
+});
+
+describe("ResultCache recency", () => {
+  it("counts reads as use", () => {
+    const cache = new ResultCache(2);
+    const r = (path: string) => ({ path, mtime: 1, items: [] });
+    cache.set("a", r("x.md"));
+    cache.set("b", r("x.md"));
+    expect(cache.get("a", "x.md", 1)).toBeDefined(); // a صار الأحدث بالقراءة
+    cache.set("c", r("x.md"));
+    expect(cache.get("a", "x.md", 1)).toBeDefined();
+    expect(cache.get("b", "x.md", 1)).toBeUndefined();
+  });
+});
+
+describe("Scan version", () => {
+  it("changes only when what is shown changes", async () => {
+    const { h } = host({ "أ.md": "لا شيء", "ب.md": "الكتابة", "ج.md": "نص" });
+    const scan = new Scan(target, h, new ResultCache(), instant);
+    await scan.run();
+    expect(scan.version).toBe(1); // ملف واحد بمواضع
+    scan.forget("أ.md"); // بلا مواضع
+    expect(scan.version).toBe(1);
+    scan.forget("ب.md");
+    expect(scan.version).toBe(2);
+  });
+});

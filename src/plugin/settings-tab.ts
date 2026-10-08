@@ -4,6 +4,9 @@ import { parseFolderList, type LanguageSetting, type PossibleMode, type QuoteMod
 
 /** صفحة الإعدادات (docs/ui.md، البند ٨). كل تغيير يُحفظ فورًا وتُحدَّث اللوحة. */
 export class WaslSettingTab extends PluginSettingTab {
+  /** يحفظ حقل المجلدات المستثناة؛ يُستدعى عند مغادرته وعند إغلاق الإعدادات. */
+  private flushFolders: (() => void) | null = null;
+
   constructor(
     app: App,
     private readonly plugin: WaslPlugin,
@@ -26,13 +29,14 @@ export class WaslSettingTab extends PluginSettingTab {
         text.setValue(settings.excludedFolders.join("\n"));
         text.inputEl.rows = 4;
         text.inputEl.dir = "auto";
-        // الحفظ عند مغادرة الحقل: الكتابة حرفًا حرفًا لا تعيد البحث مع كل حرف
-        text.inputEl.addEventListener("blur", () => {
+        // الحفظ عند مغادرة الحقل أو إغلاق الإعدادات: الكتابة حرفًا حرفًا لا تعيد البحث مع كل حرف
+        this.flushFolders = () => {
           const folders = parseFolderList(text.getValue());
           if (folders.join("\n") === settings.excludedFolders.join("\n")) return;
           settings.excludedFolders = folders;
           void this.plugin.saveSettings({ rescan: true });
-        });
+        };
+        text.inputEl.addEventListener("blur", () => this.flushFolders?.());
       });
 
     new Setting(containerEl)
@@ -102,5 +106,10 @@ export class WaslSettingTab extends PluginSettingTab {
       li.appendText(" ");
       li.createSpan({ text: s.t(key) });
     }
+  }
+
+  override hide(): void {
+    this.flushFolders?.();
+    super.hide();
   }
 }

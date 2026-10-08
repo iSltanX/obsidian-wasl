@@ -51,7 +51,8 @@ export interface SourceRef {
 export interface ScanHost {
   /** الملاحظات التي تُمسح، بعد استثناء المجلدات. */
   sources(): readonly SourceRef[];
-  read(path: string): Promise<string>;
+  /** `null`: الملف لم يعد موجودًا (حُذف أو نُقل أثناء البحث)؛ يُتخطى ولا يُعدّ فشلًا. */
+  read(path: string): Promise<string | null>;
   metadata(path: string): CacheLike | undefined;
 }
 
@@ -72,12 +73,21 @@ export function scanText(target: Target, path: string, text: string, meta?: Cach
  */
 export class ResultCache {
   private readonly bySig = new Map<string, Map<string, FileResult>>();
+  private lastSig: string | null = null;
 
   constructor(private readonly maxTargets = 4) {}
 
   get(sig: string, path: string, mtime: number): FileResult | undefined {
-    const r = this.bySig.get(sig)?.get(path);
-    return r && r.mtime === mtime ? r : undefined;
+    const files = this.bySig.get(sig);
+    const r = files?.get(path);
+    if (!files || !r || r.mtime !== mtime) return undefined;
+    // القراءة استعمال: الهدف الذي يُرجع إليه كثيرًا لا يُطرد قبل غيره
+    if (this.lastSig !== sig) {
+      this.bySig.delete(sig);
+      this.bySig.set(sig, files);
+      this.lastSig = sig;
+    }
+    return r;
   }
 
   set(sig: string, result: FileResult): void {
@@ -93,6 +103,7 @@ export class ResultCache {
       }
     }
     this.bySig.set(sig, files);
+    this.lastSig = sig;
     files.set(result.path, result);
   }
 
@@ -113,6 +124,7 @@ export class ResultCache {
   clear(sig?: string): void {
     if (sig === undefined) this.bySig.clear();
     else this.bySig.delete(sig);
+    this.lastSig = null;
   }
 
   get size(): number {
@@ -154,6 +166,13 @@ export class Scan {
   /** أطول دفعة متصلة: ما قد تتجمد فيه الواجهة. ملف واحد لا يُقسم، فهي لا تقل عن أبطأ ملف. */
   maxBatchMs = 0;
   state: ScanState = "running";
+  /** يزيد كلما تغيّر ما يُعرض (ملف بمواضع أُضيف أو تبدّل أو زال)؛ ملف بلا مواضع لا يغيّره. */
+  version = 0;
+  /** رقم آخر قراءة طُلبت لكل ملف: قراءة أقدم تنتهي متأخرة لا تكتب فوق أحدث منها. */
+  private readonly reads = new Map<string, number>();
+  private readSeq = 0;
+  /** ملفات حُذفت أثناء البحث: قراءتها الجارية لا تُعيدها. */
+  private readonly gone = new Set<string>();
 
   constructor(
     readonly target: Target,
@@ -164,6 +183,27 @@ export class Scan {
 
   stop(): void {
     if (this.state === "running") this.state = "stopped";
+  }
+
+  /** ملف حُذف: تُزال نتيجته، ولا تعيدها قراءة جارية. */
+  forget(path: string): void {
+    this.gone.add(path);
+    if (this.results.get(path)?.items.length) this.version++;
+    this.results.delete(path);
+  }
+
+  /** ملف نُقل: تنتقل نتيجته، والمسار القديم يُعامل محذوفًا. */
+  move(oldPath: string, newPath: string): void {
+    const r = this.results.get(oldPath);
+    this.forget(oldPath);
+    this.gone.delete(newPath);
+    if (r) this.put({ ...r, path: newPath });
+  }
+
+  private put(r: FileResult): void {
+    const prev = this.results.get(r.path);
+    this.results.set(r.path, r);
+    if (r.items.length || prev?.items.length) this.version++;
   }
 
   async run(onProgress: (scan: Scan) => void = () => {}): Promise<ScanState> {
@@ -192,7 +232,7 @@ export class Scan {
       if (this.state !== "running") return this.state;
       const hit = this.cache.get(this.target.sig, src.path, src.mtime);
       if (hit) {
-        this.results.set(src.path, hit);
+        this.put(hit);
       } else {
         await this.scanFile(src);
         if (this.state !== "running") return this.state;
@@ -219,9 +259,13 @@ export class Scan {
 
   /** يمسح ملفًا واحدًا ويحفظ نتيجته؛ يُستعمل أيضًا لتحديث ملف تغيّر بعد انتهاء المسح. */
   async scanFile(src: SourceRef): Promise<FileResult | null> {
+    const seq = ++this.readSeq;
+    this.reads.set(src.path, seq);
+    this.gone.delete(src.path);
     let result: FileResult;
     try {
       const text = await this.host.read(src.path);
+      if (text === null || this.gone.has(src.path) || this.reads.get(src.path) !== seq) return null;
       this.chars += text.length;
       result = { path: src.path, mtime: src.mtime, items: scanText(this.target, src.path, text, this.host.metadata(src.path)) };
     } catch (e) {
@@ -231,7 +275,7 @@ export class Scan {
       return null;
     }
     this.cache.set(this.target.sig, result);
-    this.results.set(src.path, result);
+    this.put(result);
     return result;
   }
 }

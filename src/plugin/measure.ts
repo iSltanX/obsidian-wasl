@@ -87,7 +87,7 @@ export async function showMeasurement(plugin: WaslPlugin, file: TFile): Promise<
     s.t("measureText", { chars: s.num(Math.round(m.cold.chars / 1000)) }),
     s.t("measureWarm", { wall: ms(m.warm.wallMs) }),
     s.t("measureMentions", { sure: m.cold.sure, possible: m.cold.possible }),
-    m.heapDelta === undefined ? s.t("measureHeapNA") : s.t("measureHeap", { mb: s.num(Math.round(m.heapDelta / 1e5) / 10) }),
+    m.heapDelta === undefined ? s.t("measureHeapNA") : s.t("measureHeap", { mb: (m.heapDelta < 0 ? "−" : "+") + s.num(Math.round(Math.abs(m.heapDelta) / 1e5) / 10) }),
   ];
   const view = plugin.app.workspace
     .getLeavesOfType(VIEW_TYPE)

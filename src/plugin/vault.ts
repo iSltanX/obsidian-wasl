@@ -25,7 +25,7 @@ export function vaultHost(app: App, settings: () => WaslSettings): ScanHost {
         .map((f) => ({ path: f.path, mtime: f.stat.mtime })),
     read: (path) => {
       const f = vault.getFileByPath(path);
-      return f ? vault.cachedRead(f) : Promise.reject(new Error("missing file"));
+      return f ? vault.cachedRead(f) : Promise.resolve(null);
     },
     metadata: (path) => {
       const f = vault.getFileByPath(path);

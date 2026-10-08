@@ -68,3 +68,24 @@ describe("withContext", () => {
     expect(withContext(doc, [first, m(first.end)]).map((f) => f.line)).toEqual([1, 3]);
   });
 });
+
+describe("snippet edges from review", () => {
+  it("does not mark spaces at the line ends as a cut", () => {
+    const doc = " ".repeat(80) + "الكتابة" + " ".repeat(80);
+    const sn = snippetFor(doc, 80, 87, 20);
+    expect([sn.text, sn.cutStart, sn.cutEnd]).toEqual(["الكتابة", false, false]);
+  });
+
+  it("stays linear on a very long line with many mentions", () => {
+    const unit = "الكتابة ونص ";
+    const doc = unit.repeat(40_000); // نحو نصف مليون حرف في سطر واحد
+    const mentions: Mention[] = [];
+    for (let s = 0; s < doc.length; s += unit.length)
+      mentions.push({ path: "t.md", name: "الكتابة", isAlias: false, start: s, end: s + 7, surface: "الكتابة", layer: 0, reasons: [], flags: [] });
+    const t0 = performance.now();
+    const found = withContext(doc, mentions);
+    expect(found.length).toBe(40_000);
+    expect(found[20_000]?.snippet.cutStart).toBe(true);
+    expect(performance.now() - t0).toBeLessThan(1000);
+  });
+});

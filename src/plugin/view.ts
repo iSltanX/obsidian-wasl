@@ -11,7 +11,8 @@ import {
 } from "obsidian";
 import type { Found } from "./context";
 import type WaslPlugin from "./main";
-import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group } from "./present";
+import { nameKey } from "../core/index";
+import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type Presented } from "./present";
 import { makeTarget, Scan, type Target } from "./scan";
 import { isExcluded } from "./settings";
 import { noteInput, noteRefs, vaultHost } from "./vault";
@@ -26,8 +27,14 @@ const RENDER_EVERY = 250;
 const ANNOUNCE_EVERY = 2000;
 /** عدد المجموعات في القسم قبل «اعرض الباقي». */
 const GROUP_STEP = 50;
+/** أقصى تأجيل للبناء والمؤشر مضغوط: رفعه خارج النافذة قد لا يصل. */
+const HOLD_MAX = 1500;
 
 type Section = "main" | "possible";
+type Mode = "none" | "unsearchable" | "running" | "idle" | "stopped" | "done" | "failed";
+
+/** مفتاح ثابت لعنصر قابل للتركيز، يُستعاد به التركيز بعد البناء. */
+const key = (...parts: (string | number)[]): string => JSON.stringify(parts);
 
 /**
  * اللوحة الجانبية: مواضع الملاحظة النشطة غير المربوطة في الملاحظات الأخرى (docs/ui.md).
@@ -50,6 +57,16 @@ export class MentionsView extends ItemView {
   private closed = false;
   /** ظهور اللوحة نفسها: فتح الدرج على الجوال لا يطلق حدثًا من أحداث مساحة العمل. */
   private observer: IntersectionObserver | null = null;
+  /** رقم كل بحث، فيتميّز بحثان للهدف نفسه في مفتاح القائمة. */
+  private scanSerial = 0;
+  /** يزيد مع كل فعل عرض (طي، «اعرض الباقي»، «زرتَها») فيُعاد بناء القائمة. */
+  private uiVersion = 0;
+  private headKey = "";
+  private bodyKey = "";
+  /** وقت ضغط المؤشر داخل اللوحة، أو صفر. */
+  private pointerDownAt = 0;
+  private statusEl: HTMLElement | null = null;
+  private progressEl: HTMLElement | null = null;
   /** زمن آخر رسم كامل للوحة وهدفه؛ يقرؤه أمر القياس (ت٣). */
   lastRenderMs = 0;
   get targetPath(): string | null {
@@ -104,6 +121,14 @@ export class MentionsView extends ItemView {
     );
     this.registerEvent(ws.on("layout-change", () => this.wake()));
     this.registerEvent(ws.on("resize", () => this.wake()));
+    this.registerDomEvent(this.contentEl, "pointerdown", () => (this.pointerDownAt = Date.now()));
+    const release = (): void => {
+      if (!this.pointerDownAt) return;
+      this.pointerDownAt = 0;
+      this.requestRender();
+    };
+    this.registerDomEvent(this.contentEl.ownerDocument, "pointerup", release);
+    this.registerDomEvent(this.contentEl.ownerDocument, "pointercancel", release);
     this.observer = new IntersectionObserver(() => this.wake());
     this.observer.observe(this.contentEl);
     // أحداث الخزينة بعد جاهزية التخطيط: قبلها يُطلق «create» لكل ملف عند الفتح
@@ -157,7 +182,9 @@ export class MentionsView extends ItemView {
     const prev = this.target;
     const samePath = prev?.note.path === file.path;
     if (samePath && prev?.sig === next.sig) {
+      // «المفتوحة الآن» وتنبيه الالتباس قد تغيّرا ولو بقيت البصمة
       this.target = next;
+      this.requestRender();
       return false;
     }
     if (!samePath) this.resetViewState();
@@ -176,6 +203,7 @@ export class MentionsView extends ItemView {
     this.expanded.clear();
     this.groupLimit = { main: GROUP_STEP, possible: GROUP_STEP };
     this.visited.clear();
+    this.uiVersion++;
     this.bodyEl.scrollTop = 0;
     this.contentEl.scrollTop = 0;
   }
@@ -213,6 +241,7 @@ export class MentionsView extends ItemView {
     this.scan?.stop();
     const scan = new Scan(target, vaultHost(this.app, () => this.plugin.settings), this.plugin.cache);
     this.scan = scan;
+    this.scanSerial++;
     this.pausedHidden = false;
     // لا رسم فوري: الملفات المحفوظة في الذاكرة تُقرأ في الدفعة الأولى، فلا تومض القائمة فارغة
     this.requestRender();
@@ -235,6 +264,10 @@ export class MentionsView extends ItemView {
   private stopByUser(): void {
     this.scan?.stop();
     this.wantScan = false;
+    if (this.startTimer !== null) {
+      window.clearTimeout(this.startTimer);
+      this.startTimer = null;
+    }
     this.render();
   }
 
@@ -259,7 +292,7 @@ export class MentionsView extends ItemView {
     const scan = this.scan;
     if (!scan || !this.target || scan.target.sig !== this.target.sig) return;
     if (isExcluded(file.path, this.plugin.settings.excludedFolders)) {
-      scan.results.delete(file.path);
+      scan.forget(file.path);
       this.requestRender();
       return;
     }
@@ -280,56 +313,76 @@ export class MentionsView extends ItemView {
     this.refreshFile(file);
   }
 
+  /**
+   * هل يمس الملف التباس عنوان الهدف؟ هو الشيء الوحيد في الهدف الذي يعتمد على الملاحظات الأخرى.
+   * بدون هذا الفحص كانت عملية جماعية (مزامنة، نقل مجلد) تعيد بناء الفهرس كله مع كل ملف.
+   */
+  private touchesTitle(...paths: string[]): boolean {
+    const t = this.target;
+    if (!t) return false;
+    const titleKey = nameKey(t.note.title);
+    return paths.some((p) => p.toLowerCase().endsWith(".md") && nameKey(basename(p)) === titleKey);
+  }
+
   private fileRenamed(file: TAbstractFile, oldPath: string): void {
     if (this.lastActive === oldPath) this.lastActive = file.path;
+    const t = this.target;
     if (!(file instanceof TFile)) {
-      // مجلد: مسارات ما فيه تغيّرت، وربما الهدف معها؛ بحث جديد يقرأ ما لم يُحفظ بمساره الجديد
-      const t = this.target;
+      // مجلد: Obsidian يطلق «rename» لكل ملف فيه بعده، فتنتقل النتائج واحدة واحدة. يبقى الهدف إن كان فيه،
+      // وبحث جديد احتياطًا إن لم تصل أحداث الملفات (الجوال لم يُتحقق منه): ما نُقل في الذاكرة لا يُقرأ ثانية
       if (!t) return;
       const moved = t.note.path.startsWith(oldPath + "/") ? this.app.vault.getFileByPath(file.path + t.note.path.slice(oldPath.length)) : null;
       if (moved) this.setTarget(moved, { now: true });
-      else if (!this.recheckTarget()) this.queueScan(0);
+      else this.queueScan(0);
       return;
     }
     if (file.extension !== "md") return;
     this.plugin.cache.rename(oldPath, file.path);
-    if (!this.target) return;
-    if (this.target.note.path === oldPath) {
+    if (!t) return;
+    if (t.note.path === oldPath) {
       this.setTarget(file, { now: true });
       return;
     }
-    if (this.recheckTarget()) return; // عنوان مكرر ظهر أو زال
+    if (this.touchesTitle(oldPath, file.path) && this.recheckTarget()) return;
     const scan = this.scan;
-    const prev = scan?.results.get(oldPath);
-    scan?.results.delete(oldPath);
-    if (scan && prev && !isExcluded(file.path, this.plugin.settings.excludedFolders)) {
-      scan.results.set(file.path, { ...prev, path: file.path });
+    if (!scan) return;
+    if (isExcluded(file.path, this.plugin.settings.excludedFolders)) {
+      scan.forget(oldPath);
+      this.requestRender();
+    } else if (scan.results.has(oldPath)) {
+      scan.move(oldPath, file.path);
       this.requestRender();
     } else {
+      scan.forget(oldPath);
       this.refreshFile(file);
     }
   }
 
   private fileDeleted(file: TAbstractFile): void {
-    this.plugin.cache.drop(file.path);
-    if (!this.target) return;
-    if (file.path === this.target.note.path) {
+    const t = this.target;
+    const isFile = file instanceof TFile;
+    if (isFile && file.extension !== "md") return;
+    if (isFile) this.plugin.cache.drop(file.path);
+    if (!t) return;
+    const inside = (p: string): boolean => p === file.path || p.startsWith(file.path + "/");
+    if (inside(t.note.path)) {
       this.scan?.stop();
       this.scan = null;
       this.target = null;
       this.render();
       return;
     }
-    if (this.recheckTarget()) return;
+    if (isFile && this.touchesTitle(file.path) && this.recheckTarget()) return;
     const scan = this.scan;
     if (!scan) return;
-    for (const path of [...scan.results.keys()]) if (!this.app.vault.getFileByPath(path)) scan.results.delete(path);
+    if (isFile) scan.forget(file.path);
+    else for (const p of [...scan.results.keys()]) if (inside(p)) scan.forget(p);
     this.requestRender();
   }
 
   private fileCreated(file: TAbstractFile): void {
     if (!(file instanceof TFile) || file.extension !== "md" || !this.target) return;
-    if (this.recheckTarget()) return;
+    if (this.touchesTitle(file.path) && this.recheckTarget()) return;
     this.refreshFile(file);
   }
 
@@ -340,12 +393,15 @@ export class MentionsView extends ItemView {
     const file = this.app.vault.getFileByPath(source);
     if (!file) {
       new Notice(s.t("sourceGone"));
-      this.scan?.results.delete(source);
+      this.scan?.forget(source);
       this.plugin.cache.drop(source);
       this.render();
       return;
     }
-    if (m) this.visited.add(source + "\u0000" + m.start);
+    if (m) {
+      this.visited.add(source + "\u0000" + m.start);
+      this.uiVersion++;
+    }
     // فتح موضع من اللوحة لا يغيّر هدفها: الملف المفتوح يُعدّ «مرئيًا» قبل أن يُطلق حدثه
     this.lastActive = file.path;
     const leaf = this.app.workspace.getLeaf(Keymap.isModEvent(evt));
@@ -390,37 +446,134 @@ export class MentionsView extends ItemView {
     }
   }
 
+  /**
+   * يعيد بناء الرأس حين تتغيّر حالته فقط، والقائمة حين يتغيّر ما يُعرض فقط؛ نص التقدّم وشريطه يُحدَّثان
+   * في مكانهما. البناء الكامل كل ربع ثانية أثناء البحث كان يُضيّع النقرات وتركيز لوحة المفاتيح.
+   */
   private draw(): void {
     const s = this.plugin.s;
+    const st = this.plugin.settings;
     this.contentEl.dir = s.lang === "ar" ? "rtl" : "ltr";
-    const scrollTop = this.contentEl.scrollTop;
-    this.topEl.empty();
-    this.bodyEl.empty();
-
     const t = this.target;
+    const scan = this.scan;
+    const p = t && t.index.size ? present(scan ? scan.results.values() : [], st) : null;
+    const running = scan ? scan.state === "running" || this.pausedHidden : !!t && (this.wantScan || this.startTimer !== null);
+    const mode: Mode = !t ? "none" : !t.index.size ? "unsearchable" : running ? "running" : (scan?.state ?? "idle");
+    const active = this.app.workspace.getActiveFile();
+    const openNow = t && active && active.extension === "md" && active.path !== t.note.path ? active : null;
+    const total = p ? p.mainCount + p.possibleCount : 0;
+
+    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, mode, p?.hidden, total > 0, openNow?.path, scan?.failed ?? 0]);
+    const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode]);
+    // المؤشر مضغوط داخل اللوحة: يؤجَّل البناء حتى يُرفع، كي تصل النقرة إلى العنصر الذي ضُغط
+    const focus = this.focusKey();
+    const hold = this.pointerDownAt > 0 && Date.now() - this.pointerDownAt < HOLD_MAX;
+    if (hold) this.requestRender();
+    let rebuilt = false;
+    if (headKey !== this.headKey && !hold) {
+      this.headKey = headKey;
+      this.drawHead(t, scan, p, mode, openNow);
+      rebuilt = true;
+    }
+    this.updateStatus(scan, p, mode);
+    if (bodyKey !== this.bodyKey && !hold) {
+      this.bodyKey = bodyKey;
+      const scrollTop = this.contentEl.scrollTop;
+      this.bodyEl.empty();
+      this.drawBody(t, scan, p, mode);
+      this.contentEl.scrollTop = scrollTop;
+      rebuilt = true;
+    }
+    if (rebuilt) this.restoreFocus(focus);
+  }
+
+  private drawHead(t: Target | null, scan: Scan | null, p: Presented | null, mode: Mode, openNow: TFile | null): void {
+    const s = this.plugin.s;
+    this.topEl.empty();
+    this.statusEl = null;
+    this.progressEl = null;
+    if (!t) return;
+    this.renderTarget(t);
+    if (!t.index.size || !p) return;
+    const row = this.topEl.createDiv("wasl-status");
+    this.statusEl = row.createDiv("wasl-status-text");
+    const buttons = row.createDiv("wasl-status-buttons");
+    if (mode === "running") {
+      this.textButton(buttons, s.t("stop"), () => this.stopByUser(), "st:stop");
+    } else if (mode === "failed") {
+      this.statusEl.addClass("is-error");
+      this.textButton(buttons, s.t("retry"), () => this.rescan(), "st:retry");
+    } else if (mode === "stopped") {
+      this.textButton(buttons, s.t("resume"), () => void this.runScan(), "st:resume");
+      this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
+    } else {
+      this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
+    }
+    if (p.hidden) {
+      const h = this.topEl.createDiv("wasl-hidden");
+      h.createSpan({ text: s.t("hiddenBySettings", { n: p.hidden }) });
+      if (mode !== "running" && !p.mainCount && !p.possibleCount) this.textButton(h, s.t("openSettings"), () => this.openSettings(), "st:settings");
+    }
+    if (mode === "running") {
+      const bar = this.topEl.createDiv({ cls: "wasl-progress", attr: { "aria-hidden": "true" } });
+      this.progressEl = bar.createDiv("wasl-progress-bar");
+    }
+    this.renderNotes(t, scan, openNow);
+  }
+
+  /** نص الحالة وشريط التقدّم في مكانهما، بلا إعادة بناء. */
+  private updateStatus(scan: Scan | null, p: Presented | null, mode: Mode): void {
+    const s = this.plugin.s;
+    let line = "";
+    if (mode === "running") line = scan && scan.total ? s.t("scanning", { done: scan.done, notes: s.notes(scan.total) }) : s.t("searching");
+    else if (mode === "failed") line = s.t("failed");
+    else if (mode === "stopped" && scan) line = s.t("stopped", { done: scan.done, notes: s.notes(scan.total) });
+    else if (p && p.mainCount + p.possibleCount)
+      line = s.t("summary", { mentions: s.mentions(p.mainCount + p.possibleCount), notes: s.notes(p.noteCount) }) + s.possibleOf(p.possibleCount);
+    this.statusEl?.setText(line);
+    if (this.progressEl) {
+      const pct = scan && scan.total ? Math.round((scan.done / scan.total) * 100) : 0;
+      this.progressEl.setCssProps({ "--wasl-progress": `${pct}%` });
+    }
+    this.announce(line, mode !== "running");
+  }
+
+  private drawBody(t: Target | null, scan: Scan | null, p: Presented | null, mode: Mode): void {
+    const s = this.plugin.s;
     if (!t) {
       this.bodyEl.createDiv({ cls: "wasl-empty", text: s.t("noNote") });
       return;
     }
-    this.renderTarget(t);
     if (!t.index.size) {
       this.bodyEl.createDiv({ cls: "wasl-empty", text: s.t("unsearchable", { name: t.note.title }) });
       return;
     }
-
-    const scan = this.scan;
-    const p = present(scan ? scan.results.values() : [], this.plugin.settings);
-    const running = !scan || scan.state === "running" || this.pausedHidden;
-    this.renderStatus(scan, running, p.mainCount + p.possibleCount, p.noteCount, p.possibleCount, p.hidden);
-    this.renderNotes(t, scan);
-
+    if (!p) return;
     const dup = duplicateNames([...p.main, ...p.possible]);
     if (p.mainCount) this.renderSection("main", p.main, p.mainCount, dup);
     if (p.possibleCount) this.renderSection("possible", p.possible, p.possibleCount, dup);
-    if (!running && !p.mainCount && !p.possibleCount && scan?.state === "done") {
+    if (mode === "done" && scan && !p.mainCount && !p.possibleCount) {
       this.bodyEl.createDiv({ cls: "wasl-empty", text: s.t("none", { name: t.note.title, notes: s.notes(scan.total) }) });
     }
-    this.contentEl.scrollTop = scrollTop;
+  }
+
+  /** مفتاح العنصر الذي عليه التركيز داخل اللوحة، ليعود إليه بعد البناء. */
+  private focusKey(): string | null {
+    const a = this.contentEl.ownerDocument.activeElement;
+    if (!a || !this.contentEl.contains(a)) return null;
+    return a.closest("[data-wasl-key]")?.getAttribute("data-wasl-key") ?? null;
+  }
+
+  private restoreFocus(key: string | null): void {
+    if (!key) return;
+    for (const el of Array.from(this.contentEl.querySelectorAll<HTMLElement>("[data-wasl-key]"))) {
+      if (el.getAttribute("data-wasl-key") === key) {
+        el.focus({ preventScroll: true });
+        return;
+      }
+    }
+    // زر الحالة تبدّل («أوقف البحث» صار «أعد البحث» مثلًا): التركيز على بديله لا على الصفحة
+    if (key.startsWith("st:")) this.topEl.querySelector<HTMLElement>(".wasl-status-buttons button")?.focus({ preventScroll: true });
   }
 
   private renderTarget(t: Target): void {
@@ -439,48 +592,8 @@ export class MentionsView extends ItemView {
     }
   }
 
-  private renderStatus(scan: Scan | null, running: boolean, total: number, notes: number, possible: number, hidden: number): void {
-    const s = this.plugin.s;
-    const row = this.topEl.createDiv("wasl-status");
-    const text = row.createDiv("wasl-status-text");
-    const buttons = row.createDiv("wasl-status-buttons");
-    let line = "";
-    if (running) {
-      line = scan && scan.total ? s.t("scanning", { done: scan.done, notes: s.notes(scan.total) }) : s.t("searching");
-      text.setText(line);
-      this.textButton(buttons, s.t("stop"), () => this.stopByUser());
-    } else if (scan?.state === "failed") {
-      line = s.t("failed");
-      text.setText(line);
-      text.addClass("is-error");
-      this.textButton(buttons, s.t("retry"), () => this.rescan());
-    } else if (scan?.state === "stopped") {
-      line = s.t("stopped", { done: scan.done, notes: s.notes(scan.total) });
-      text.setText(line);
-      this.textButton(buttons, s.t("resume"), () => void this.runScan());
-      this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan());
-    } else {
-      if (total) {
-        line = s.t("summary", { mentions: s.mentions(total), notes: s.notes(notes) }) + s.possibleOf(possible);
-        text.setText(line);
-      }
-      this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan());
-    }
-    if (hidden) {
-      const h = this.topEl.createDiv("wasl-hidden");
-      h.createSpan({ text: s.t("hiddenBySettings", { n: hidden }) });
-      if (!running && !total) this.textButton(h, s.t("openSettings"), () => this.openSettings());
-    }
-    if (running) {
-      const bar = this.topEl.createDiv({ cls: "wasl-progress", attr: { "aria-hidden": "true" } });
-      const pct = scan && scan.total ? Math.round((scan.done / scan.total) * 100) : 0;
-      bar.createDiv("wasl-progress-bar").setCssProps({ "--wasl-progress": `${pct}%` });
-    }
-    this.announce(line, !running);
-  }
-
   /** تنبيه الالتباس، و«المفتوحة الآن»، وأخطاء القراءة. */
-  private renderNotes(t: Target, scan: Scan | null): void {
+  private renderNotes(t: Target, scan: Scan | null, openNow: TFile | null): void {
     const s = this.plugin.s;
     if (t.sameTitle.length) {
       const folders = t.sameTitle
@@ -491,13 +604,13 @@ export class MentionsView extends ItemView {
         .join(s.t("listSep"));
       this.topEl.createDiv({ cls: "wasl-note", text: s.t("ambiguous", { folders }) });
     }
-    const active = this.app.workspace.getActiveFile();
-    if (active && active.extension === "md" && active.path !== t.note.path) {
+    if (openNow) {
       const line = this.topEl.createDiv("wasl-note wasl-open-now");
-      line.createSpan({ text: s.t("openNow", { name: active.basename }) });
+      line.createSpan({ text: s.t("openNow", { name: openNow.basename }) });
       line.createSpan({ cls: "wasl-sep", text: " · ", attr: { "aria-hidden": "true" } });
       const b = line.createEl("button", { cls: "wasl-link-button", text: s.t("showActive") });
-      b.onclick = () => this.setTarget(active, { now: true });
+      b.dataset.waslKey = key("show-active");
+      b.onclick = () => this.setTarget(openNow, { now: true });
     }
     if (scan?.failed) this.topEl.createDiv({ cls: "wasl-error", text: s.t("readErrors", { notes: s.notes(scan.failed) }) });
   }
@@ -507,11 +620,13 @@ export class MentionsView extends ItemView {
     const open = this.sectionOpen[section];
     const wrap = this.bodyEl.createDiv(`wasl-section wasl-section-${section}`);
     const head = wrap.createEl("button", { cls: "wasl-section-head", attr: { "aria-expanded": String(open) } });
+    head.dataset.waslKey = key("sec", section);
     this.chevron(head, open);
     head.createSpan({ cls: "wasl-section-title", text: section === "main" ? s.t("sectionMain") : s.t("sectionPossible") });
     head.createSpan({ cls: "wasl-count", text: s.num(count) });
     head.onclick = () => {
       this.sectionOpen[section] = !open;
+      this.uiVersion++;
       this.render();
     };
     if (section === "possible") wrap.createDiv({ cls: "wasl-hint", text: s.t("possibleHint") });
@@ -519,17 +634,23 @@ export class MentionsView extends ItemView {
     const limit = this.groupLimit[section];
     for (const g of groups.slice(0, limit)) this.renderGroup(wrap, section, g, dup);
     if (groups.length > limit) {
-      this.textButton(wrap, s.t("showRest", { n: s.notes(groups.length - limit) }), () => {
-        this.groupLimit[section] += GROUP_STEP;
-        this.render();
-      }).addClass("wasl-show-rest");
+      this.textButton(
+        wrap,
+        s.t("showRest", { n: s.notes(groups.length - limit) }),
+        () => {
+          this.groupLimit[section] += GROUP_STEP;
+          this.uiVersion++;
+          this.render();
+        },
+        key("rest", section),
+      ).addClass("wasl-show-rest");
     }
   }
 
   private renderGroup(parent: HTMLElement, section: Section, g: Group, dup: ReadonlySet<string>): void {
     const s = this.plugin.s;
-    const key = section + "\u0000" + g.path;
-    const open = !this.collapsed.has(key);
+    const id = section + "\u0000" + g.path;
+    const open = !this.collapsed.has(id);
     const name = basename(g.path);
     const el = parent.createDiv("wasl-group");
     const head = el.createDiv("wasl-group-head");
@@ -537,32 +658,43 @@ export class MentionsView extends ItemView {
       cls: "wasl-toggle clickable-icon",
       attr: { "aria-expanded": String(open), "aria-label": name },
     });
+    toggle.dataset.waslKey = key("toggle", section, g.path);
     this.chevron(toggle, open);
     toggle.onclick = () => {
-      if (open) this.collapsed.add(key);
-      else this.collapsed.delete(key);
+      if (open) this.collapsed.add(id);
+      else this.collapsed.delete(id);
+      this.uiVersion++;
       this.render();
     };
     const link = head.createEl("button", { cls: "wasl-group-name" });
+    link.dataset.waslKey = key("group", section, g.path);
     link.createSpan({ text: name, attr: { dir: "auto" } });
     const folder = folderOf(g.path);
     if (folder && dup.has(name)) link.createEl("bdi", { cls: "wasl-folder", text: folder.split("/").join(" › ") });
     link.onclick = (e) => void this.openMention(g.path, g.items[0], e);
     head.createSpan({ cls: "wasl-count", text: s.num(g.items.length) });
     if (!open) return;
-    const shown = visibleCount(g.items.length, this.expanded.has(key));
+    const shown = visibleCount(g.items.length, this.expanded.has(id));
     for (const m of g.items.slice(0, shown)) this.renderCard(el, g.path, m);
     if (shown < g.items.length) {
-      this.textButton(el, s.t("showRest", { n: g.items.length - shown }), () => {
-        this.expanded.add(key);
-        this.render();
-      }).addClass("wasl-show-rest");
+      this.textButton(
+        el,
+        s.t("showRest", { n: g.items.length - shown }),
+        () => {
+          this.expanded.add(id);
+          this.uiVersion++;
+          this.render();
+        },
+        key("rest", section, g.path),
+      ).addClass("wasl-show-rest");
     }
   }
 
   private renderCard(parent: HTMLElement, source: string, m: Found): void {
     const s = this.plugin.s;
     const card = parent.createDiv({ cls: "wasl-card", attr: { tabindex: "0" } });
+    card.dataset.waslKey = key("card", source, m.start);
+    const k = (action: string): string => key(action, source, m.start);
     if (this.visited.has(source + "\u0000" + m.start)) card.addClass("is-visited");
 
     const sn = m.snippet;
@@ -594,19 +726,28 @@ export class MentionsView extends ItemView {
     const actions = card.createDiv("wasl-actions");
     // المرحلة ٢: الربط والتجاهل معطّلان؛ التلميح لا يظهر على اللمس فالنقر يعرض تنبيهًا
     const later = (label: string, cls: string): void => {
-      const b = this.textButton(actions, label, () => new Notice(s.t("comingLater")));
+      const b = this.textButton(actions, label, () => new Notice(s.t("comingLater")), k(cls));
       b.addClass(cls);
       b.addClass("is-disabled");
       b.setAttr("aria-disabled", "true");
     };
     later(s.t("link"), "mod-link");
     later(s.t("ignore"), "mod-ignore");
-    this.textButton(actions, s.t("open"), (e) => void this.openMention(source, m, e));
-    this.iconButton(actions, "more-horizontal", s.t("more"), (e) => {
-      const menu = new Menu();
-      menu.addItem((item) => item.setTitle(s.t("ignoreForm")).setDisabled(true));
-      if (e instanceof MouseEvent) menu.showAtMouseEvent(e);
-    }).addClass("wasl-more");
+    this.textButton(actions, s.t("open"), (e) => void this.openMention(source, m, e), k("open"));
+    const more = this.iconButton(
+      actions,
+      "more-horizontal",
+      s.t("more"),
+      () => {
+        const menu = new Menu();
+        menu.addItem((item) => item.setTitle(s.t("ignoreForm")).setDisabled(true));
+        // من مستطيل الزر لا من الحدث: Enter يطلق نقرة بإحداثيات صفرية، والنافذة المنبثقة لها MouseEvent آخر
+        const r = more.getBoundingClientRect();
+        menu.showAtPosition({ x: r.left, y: r.bottom });
+      },
+      k("more"),
+    );
+    more.addClass("wasl-more");
   }
 
   private chevron(parent: HTMLElement, open: boolean): void {
@@ -614,8 +755,9 @@ export class MentionsView extends ItemView {
     setIcon(c, "chevron-down");
   }
 
-  private textButton(parent: HTMLElement, label: string, onClick: (e: MouseEvent) => void): HTMLButtonElement {
+  private textButton(parent: HTMLElement, label: string, onClick: (e: MouseEvent) => void, focusKey?: string): HTMLButtonElement {
     const b = parent.createEl("button", { cls: "wasl-button", text: label });
+    if (focusKey) b.dataset.waslKey = focusKey;
     b.onclick = (e) => {
       e.stopPropagation();
       onClick(e);
@@ -623,8 +765,9 @@ export class MentionsView extends ItemView {
     return b;
   }
 
-  private iconButton(parent: HTMLElement, icon: string, label: string, onClick: (e: MouseEvent) => void): HTMLButtonElement {
+  private iconButton(parent: HTMLElement, icon: string, label: string, onClick: (e: MouseEvent) => void, focusKey?: string): HTMLButtonElement {
     const b = parent.createEl("button", { cls: "wasl-icon-button clickable-icon", attr: { "aria-label": label } });
+    if (focusKey) b.dataset.waslKey = focusKey;
     setIcon(b, icon);
     b.onclick = (e) => {
       e.stopPropagation();

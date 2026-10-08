@@ -31,10 +31,8 @@ function isSurrogateTail(c: number): boolean {
   return c >= 0xdc00 && c <= 0xdfff;
 }
 
-/** لا يبدأ المقصوص بحركة ولا بنصف محرف. */
-function skipAttached(text: string, i: number): number {
-  while (i < text.length && (isMark(text.charCodeAt(i)) || isSurrogateTail(text.charCodeAt(i)))) i++;
-  return i;
+function isAttached(c: number): boolean {
+  return isMark(c) || isSurrogateTail(c);
 }
 
 /** اتجاه أول حرف قوي: العبرية والعربية وأشكال عرضها يمين، والحروف اللاتينية وما بعدها حتى الإغريقية الممتدة يسار. */
@@ -49,39 +47,58 @@ export function firstStrongDir(text: string, from = 0, to = text.length): "rtl" 
   return null;
 }
 
-/** سياق موضع واحد داخل سطره. */
-export function snippetFor(doc: string, start: number, end: number, radius = RADIUS): Snippet {
-  const lineStart = doc.lastIndexOf("\n", start - 1) + 1;
-  let lineEnd = doc.indexOf("\n", end);
-  if (lineEnd < 0) lineEnd = doc.length;
-  if (doc[lineEnd - 1] === "\r") lineEnd--;
-  lineEnd = Math.max(end, lineEnd);
+/** حدود سطر واتجاهه؛ تُحسب مرة لكل سطر لا لكل موضع، فلا يتضاعف الزمن على سطر طويل فيه مواضع كثيرة. */
+export interface LineInfo {
+  readonly start: number;
+  /** نهاية السطر بلا `\r`. */
+  readonly end: number;
+  /** أول ما ليس مسافة، وما بعد آخر ما ليس مسافة: القص في المسافات الطرفية ليس قصًا. */
+  readonly firstText: number;
+  readonly lastText: number;
+  readonly dir: "rtl" | "ltr" | null;
+}
 
-  let before = doc.slice(lineStart, start);
-  const cutStart = before.length > radius;
-  if (cutStart) {
-    const space = before.indexOf(" ", before.length - radius);
-    const at = space >= 0 && space < before.length - 1 ? space + 1 : before.length - radius;
-    before = before.slice(skipAttached(before, at));
-  }
-  before = before.replace(/^[ \t]+/, "");
+export function lineInfo(doc: string, at: number): LineInfo {
+  const start = doc.lastIndexOf("\n", at - 1) + 1;
+  let end = doc.indexOf("\n", at);
+  if (end < 0) end = doc.length;
+  if (doc[end - 1] === "\r") end--;
+  let firstText = start;
+  while (firstText < end && (doc[firstText] === " " || doc[firstText] === "\t")) firstText++;
+  let lastText = end;
+  while (lastText > firstText && (doc[lastText - 1] === " " || doc[lastText - 1] === "\t")) lastText--;
+  return { start, end, firstText, lastText, dir: firstStrongDir(doc, start, end) };
+}
 
-  let after = doc.slice(end, lineEnd);
-  const cutEnd = after.length > radius;
-  if (cutEnd) {
-    const space = after.lastIndexOf(" ", radius);
-    after = after.slice(0, skipAttached(after, space > 0 ? space : radius));
+/** سياق موضع واحد داخل سطره. القراءة محصورة فيما حول الموضع بنصف القطر. */
+export function snippetFor(doc: string, start: number, end: number, radius = RADIUS, line: LineInfo = lineInfo(doc, start)): Snippet {
+  const lineEnd = Math.max(end, line.end);
+
+  let from = Math.min(line.firstText, start);
+  if (start - from > radius) {
+    const at = start - radius;
+    const space = doc.slice(at, start).indexOf(" ");
+    from = space >= 0 && at + space < start - 1 ? at + space + 1 : at;
+    while (from < start && isAttached(doc.charCodeAt(from))) from++;
   }
-  after = after.replace(/[ \t]+$/, "");
+  const before = doc.slice(from, start).replace(/^[ \t]+/, "");
+
+  let to = lineEnd;
+  if (lineEnd - end > radius) {
+    const space = doc.slice(end, end + radius + 1).lastIndexOf(" ", radius);
+    to = end + (space > 0 ? space : radius);
+    while (to < lineEnd && isAttached(doc.charCodeAt(to))) to++;
+  }
+  const after = doc.slice(end, to).replace(/[ \t]+$/, "");
 
   const match = doc.slice(start, end);
   return {
     text: before + match + after,
     matchStart: before.length,
     matchEnd: before.length + match.length,
-    cutStart,
-    cutEnd,
-    dir: firstStrongDir(doc, lineStart, lineEnd),
+    cutStart: from > line.firstText,
+    cutEnd: to < line.lastText,
+    dir: line.dir,
   };
 }
 
@@ -89,11 +106,13 @@ export function snippetFor(doc: string, start: number, end: number, radius = RAD
 export function withContext(doc: string, mentions: readonly Mention[], radius = RADIUS): Found[] {
   let line = 0;
   let cursor = 0;
+  let info: LineInfo | null = null;
   return mentions.map((m) => {
     for (let i = doc.indexOf("\n", cursor); i >= 0 && i < m.start; i = doc.indexOf("\n", i + 1)) {
       line++;
       cursor = i + 1;
     }
-    return { ...m, line, snippet: snippetFor(doc, m.start, m.end, radius) };
+    if (!info || m.start < info.start || m.start > info.end) info = lineInfo(doc, m.start);
+    return { ...m, line, snippet: snippetFor(doc, m.start, m.end, radius, info) };
   });
 }
