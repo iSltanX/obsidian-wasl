@@ -7,10 +7,11 @@ type Fixture = {
   id: string;
   kind: "match" | "context" | "vault";
   doc: string;
-  target: { title: string; aliases: string[]; exactOnly: boolean; path: string };
+  target: { title: string; aliases: string[]; exactOnly: boolean; indefinite?: boolean; path: string };
   expect: { layer: 0 | 1 | 2 | null; surface?: string; acceptable?: (0 | 1 | 2 | null)[]; flags?: string[] };
   why: string;
   studyRef?: number;
+  origin?: string;
 };
 
 const path = (name: string) => fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url));
@@ -25,7 +26,8 @@ describe("fixtures", () => {
   });
 
   it("dev covers the study examples 1 to 31 exactly once", () => {
-    expect(dev.map((f) => f.studyRef).sort((a, b) => a! - b!)).toEqual(Array.from({ length: 31 }, (_, i) => i + 1));
+    const refs = dev.flatMap((f) => (f.studyRef === undefined ? [] : [f.studyRef])).sort((a, b) => a - b);
+    expect(refs).toEqual(Array.from({ length: 31 }, (_, i) => i + 1));
   });
 
   it("sets are split by title, so tuning on dev cannot leak into held-out", () => {
@@ -45,6 +47,7 @@ describe("fixtures", () => {
       expect(f.doc).toContain(f.expect.surface);
     }
     for (const a of f.expect.acceptable ?? []) expect([0, 1, 2, null]).toContain(a);
+    if (f.target.indefinite !== undefined) expect(typeof f.target.indefinite).toBe("boolean");
   });
 
   it("held-out set is locked (changes need a decision record)", () => {
