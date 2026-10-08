@@ -35,6 +35,21 @@ const isWordChar = (c) =>
   (c >= 0x100 && c <= 0x24f) || (c >= 0x0621 && c <= 0x063a) || (c >= 0x0641 && c <= 0x064a) ||
   (c >= 0x066e && c <= 0x066f) || (c >= 0x0671 && c <= 0x06d3) || c === 0x06d5 ||
   (c >= 0x06ee && c <= 0x06ef) || (c >= 0x06fa && c <= 0x06fc) || c === 0x06ff;
+// فئة «الحرف» في الإشارات غير المربوطة المدمجة (من كود Obsidian 1.14.4، مُبسّطة للعربية واللاتينية):
+// التطويل وأشكال العرض والأرقام حروف؛ الحركات ليست حروفًا.
+const isObsidianWordChar = (c) =>
+  isWordChar(c) || (c >= 0x41 && c <= 0x5a) || (c >= 0xc0 && c <= 0xde && c !== 0xd7) || c === 0x0620 ||
+  c === TATWEEL || c === 0x06e5 || c === 0x06e6 || isPresentation(c) || isArabicIndicDigit(c);
+/** هل تلتقط الميزة المدمجة هذا الموضع؟ الاسم حرفيًا دون حساسية لحالة الأحرف، ولا حرف قبله ولا بعده. */
+function builtinMatches(raw, start, end, name) {
+  const hay = raw.slice(start, end).toLowerCase();
+  const needle = name.toLowerCase();
+  for (let o = hay.indexOf(needle); o >= 0; o = hay.indexOf(needle, o + 1)) {
+    const a = start + o, z = a + needle.length;
+    if ((a === 0 || !isObsidianWordChar(raw.charCodeAt(a - 1))) && (z >= raw.length || !isObsidianWordChar(raw.charCodeAt(z)))) return true;
+  }
+  return false;
+}
 const hasLetter = (s) => [...s].some((ch) => { const c = ch.codePointAt(0); return isWordChar(c) && !(c >= 0x30 && c <= 0x39); });
 
 // تركيب الهمزة والمدة المفككة (NFD) على الحرف السابق، مثل ا + ٔ = أ
@@ -314,11 +329,11 @@ function scanNote(note, index) {
         const strictEnd = end;
         while (end < note.raw.length && isMark(note.raw.charCodeAt(end))) end++;
         const surface = note.raw.slice(start, end);
-        const literalLoose = !chain.clitics && note.raw.slice(start, strictEnd).toLowerCase() === entry.name.toLowerCase();
-        const literalStrict = literalLoose && end === strictEnd;
+        const builtin = builtinMatches(note.raw, start, end, entry.name);
+        const literalStrict = !chain.clitics && end === strictEnd && note.raw.slice(start, strictEnd).toLowerCase() === entry.name.toLowerCase();
         const reasons = [...res.reasons, ...surfaceReasons(surface, entry.name)];
         const cand = {
-          titleId: entry.title.id, layer: res.layer, reasons, literalStrict, literalLoose,
+          titleId: entry.title.id, layer: res.layer, reasons, literalStrict, builtin,
           start, end, surface, inQuote: quotes.some(([s, e]) => start >= s && start < e),
           alreadyLinked: links.has(entry.title.key) || entry.title.aliases.some((a) => links.has(linkKey(a))),
           note: note.rel,
@@ -371,30 +386,30 @@ function survey(vault, opts) {
   }
 
   const titles = [...index.titles.values()];
-  const per = new Map(titles.map((t) => [t.id, { t, strict: 0, loose: 0, L0: 0, L0nl: 0, L1: 0, L2: 0 }]));
+  const per = new Map(titles.map((t) => [t.id, { t, strict: 0, builtin: 0, L0: 0, L0nb: 0, L1: 0, L1nb: 0, L2: 0 }]));
   const reasonCount = { 0: new Map(), 1: new Map(), 2: new Map() };
   let inQuote = 0, alreadyLinked = 0;
   for (const c of all) {
     const p = per.get(c.titleId);
     if (c.literalStrict) p.strict++;
-    if (c.literalLoose) p.loose++;
-    if (c.layer === 0) { p.L0++; if (!c.literalLoose) p.L0nl++; }
-    if (c.layer === 1) p.L1++;
+    if (c.builtin) p.builtin++;
+    if (c.layer === 0) { p.L0++; if (!c.builtin) p.L0nb++; }
+    if (c.layer === 1) { p.L1++; if (!c.builtin) p.L1nb++; }
     if (c.layer === 2) p.L2++;
-    if (c.layer <= 1 && !c.literalLoose) { if (c.inQuote) inQuote++; if (c.alreadyLinked) alreadyLinked++; }
-    if (c.layer === 0 && c.literalLoose) continue;
+    if (c.layer <= 1 && !c.builtin) { if (c.inQuote) inQuote++; if (c.alreadyLinked) alreadyLinked++; }
+    if (c.layer === 0 && c.builtin) continue;
     for (const r of c.reasons.length ? c.reasons : ["exact"]) {
       const key = r.startsWith("prefix:") ? "prefix" : r;
       reasonCount[c.layer].set(key, (reasonCount[c.layer].get(key) || 0) + 1);
     }
   }
   const sum = (k) => [...per.values()].reduce((a, p) => a + p[k], 0);
-  const S = { strict: sum("strict"), loose: sum("loose"), L0: sum("L0"), L0nl: sum("L0nl"), L1: sum("L1"), L2: sum("L2") };
-  const gain = S.L0nl + S.L1;
-  const gainTitles = [...per.values()].filter((p) => p.L0nl + p.L1 > 0).map((p) => p.L0nl + p.L1).sort((a, b) => b - a);
+  const S = { strict: sum("strict"), builtin: sum("builtin"), L0: sum("L0"), L0nb: sum("L0nb"), L1: sum("L1"), L1nb: sum("L1nb"), L2: sum("L2") };
+  const gain = S.L0nb + S.L1nb;
+  const gainTitles = [...per.values()].filter((p) => p.L0nb + p.L1nb > 0).map((p) => p.L0nb + p.L1nb).sort((a, b) => b - a);
   const topN = Math.max(1, Math.ceil(gainTitles.length / 10));
   const topShare = gainTitles.slice(0, topN).reduce((a, b) => a + b, 0);
-  const notesWithGain = new Set(all.filter((c) => c.layer <= 1 && !c.literalLoose).map((c) => c.note)).size;
+  const notesWithGain = new Set(all.filter((c) => c.layer <= 1 && !c.builtin).map((c) => c.note)).size;
 
   // توزيع العناوين
   const dist = { w1: 0, w2: 0, w3: 0, arabic: 0, latin: 0, mixed: 0, short: 0 };
@@ -408,7 +423,7 @@ function survey(vault, opts) {
 
   // ── الشبكة الواسعة على عيّنة عناوين (مقام الاسترجاع)
   const rnd = mulberry32(opts.seed);
-  const withMentions = titles.filter((t) => { const p = per.get(t.id); return p.loose + p.L0 + p.L1 + p.L2 > 0; });
+  const withMentions = titles.filter((t) => { const p = per.get(t.id); return p.builtin + p.L0 + p.L1 + p.L2 > 0; });
   const wideTitles = shuffle(withMentions, rnd).slice(0, 40);
   const wide = [];
   for (const t of wideTitles) {
@@ -430,11 +445,11 @@ function survey(vault, opts) {
   // ── عيّنة الوسم
   const groups = {
     L1: all.filter((c) => c.layer === 1),
-    L0nl: all.filter((c) => c.layer === 0 && !c.literalLoose),
+    L0nb: all.filter((c) => c.layer === 0 && !c.builtin),
     L2: all.filter((c) => c.layer === 2),
     wide,
   };
-  const quota = { L1: Math.round(opts.sample * 0.5), L0nl: Math.round(opts.sample * 0.15), L2: Math.round(opts.sample * 0.15), wide: Math.round(opts.sample * 0.2) };
+  const quota = { L1: Math.round(opts.sample * 0.5), L0nb: Math.round(opts.sample * 0.15), L2: Math.round(opts.sample * 0.15), wide: Math.round(opts.sample * 0.2) };
   const sample = [];
   for (const [g, list] of Object.entries(groups)) {
     for (const c of shuffle(list, rnd).slice(0, quota[g])) sample.push({ g, c });
@@ -447,9 +462,9 @@ function survey(vault, opts) {
       .concat(sample.map(({ g, c }, i) => [i + 1, g, c.layer, c.reasons.join(" "), title(c.titleId), c.note,
         context(notesById.get(c.note).raw, c.start, c.end), ""].map(tsv).join("\t"))).join("\n") + "\n");
   writeFileSync(join(OUT, "detail.tsv"),
-    ["title\taliases\tliteral_strict\tliteral_loose\tL0\tL0_nonliteral\tL1\tL2\tgain"]
-      .concat([...per.values()].sort((a, b) => b.L0nl + b.L1 - (a.L0nl + a.L1))
-        .map((p) => [p.t.name, p.t.aliases.join("، "), p.strict, p.loose, p.L0, p.L0nl, p.L1, p.L2, p.L0nl + p.L1].map(tsv).join("\t"))).join("\n") + "\n");
+    ["title\taliases\tliteral_strict\tbuiltin\tL0\tL0_not_builtin\tL1\tL1_not_builtin\tL2\tgain"]
+      .concat([...per.values()].sort((a, b) => b.L0nb + b.L1nb - (a.L0nb + a.L1nb))
+        .map((p) => [p.t.name, p.t.aliases.join("، "), p.strict, p.builtin, p.L0, p.L0nb, p.L1, p.L1nb, p.L2, p.L0nb + p.L1nb].map(tsv).join("\t"))).join("\n") + "\n");
 
   const reasonRows = (layer) => [...reasonCount[layer].entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => `| ${k} | ${ar(v)} |`).join("\n") || "| — | ٠ |";
   const ms = Date.now() - t0;
@@ -478,13 +493,14 @@ function survey(vault, opts) {
 
 | المقياس | العدد |
 |---|---|
-| مطابقة حرفية صارمة | ${ar(S.strict)} |
-| مطابقة حرفية متسامحة (تقبل حركة في آخر الكلمة) | ${ar(S.loose)} |
+| مطابقة حرفية صارمة (بلا أي حركة) | ${ar(S.strict)} |
+| ما تلتقطه الميزة المدمجة | ${ar(S.builtin)} |
 | الطبقة ٠ | ${ar(S.L0)} |
-| منها غير حرفية | ${ar(S.L0nl)} |
+| منها لا تلتقطه المدمجة | ${ar(S.L0nb)} |
 | الطبقة ١ | ${ar(S.L1)} |
+| منها لا تلتقطه المدمجة | ${ar(S.L1nb)} |
 | الطبقة ٢ (مطفأة افتراضيًا) | ${ar(S.L2)} |
-| **المكسب الخام** (الطبقة ٠ غير الحرفية + الطبقة ١) | **${ar(gain)}** |
+| **المكسب الخام** (ما تجده الطبقتان ٠ و١ ولا تجده المدمجة) | **${ar(gain)}** |
 | نسبة المكسب الخام من مواضع الطبقتين ٠ و١ | **${pct(gain, S.L0 + S.L1)}** |
 | عناوين لها مكسب | ${ar(gainTitles.length)} من ${ar(index.titles.size)} (${pct(gainTitles.length, index.titles.size)}) |
 | حصة أعلى عُشر العناوين من المكسب | ${pct(topShare, gain)} |
@@ -492,9 +508,9 @@ function survey(vault, opts) {
 | من المكسب: داخل اقتباس | ${ar(inQuote)} |
 | من المكسب: في ملاحظة تربط الهدف أصلًا | ${ar(alreadyLinked)} |
 
-«خام» لأن دقته غير معروفة قبل الوسم. والمطابقة الحرفية تقدير لسلوك الميزة المدمجة حتى تحسمه ت١.
+«خام» لأن دقته غير معروفة قبل الوسم. نموذج الميزة المدمجة مأخوذ من كودها في Obsidian 1.14.4 وطابق تشغيلها الفعلي في ت١، خارج الكود وعناوين الأقسام التي تعرضها المدمجة ويستثنيها هذا المسح عمدًا.
 
-### أسباب الطبقة ٠ غير الحرفية
+### أسباب الطبقة ٠ التي لا تلتقطها المدمجة
 
 | السبب | العدد |
 |---|---|
@@ -544,9 +560,9 @@ function score(path) {
   }
   const summary = JSON.parse(readFileSync(join(OUT, "summary.json"), "utf8"));
   const prec = (g) => (by[g] && by[g].y + by[g].n ? by[g].y / (by[g].y + by[g].n) : null);
-  const p0 = prec("L0nl"), p1 = prec("L1"), p2 = prec("L2");
-  const estGain = (p0 ?? 0) * summary.L0nl + (p1 ?? 0) * summary.L1;
-  const share = estGain / (summary.loose + estGain);
+  const p0 = prec("L0nb"), p1 = prec("L1"), p2 = prec("L2");
+  const estGain = (p0 ?? 0) * summary.L0nb + (p1 ?? 0) * summary.L1nb;
+  const share = estGain / (summary.builtin + estGain);
   const f = (p) => (p === null ? "—" : ar((100 * p).toFixed(1)) + "٪");
   const rows = Object.entries(by).map(([g, c]) => `| ${g} | ${ar(c.y)} | ${ar(c.n)} | ${ar(c["?"])} | ${ar(c.blank)} | ${f(prec(g))} |`).join("\n");
   const out = `## نتيجة الوسم
@@ -557,7 +573,7 @@ ${rows}
 
 | المقياس | القيمة | العتبة | الحكم |
 |---|---|---|---|
-| دقة الطبقة ٠ غير الحرفية | ${f(p0)} | ٩٥٪ | ${p0 === null ? "—" : p0 >= 0.95 ? "تجتاز" : "دون العتبة"} |
+| دقة الطبقة ٠ فيما لا تلتقطه المدمجة | ${f(p0)} | ٩٥٪ | ${p0 === null ? "—" : p0 >= 0.95 ? "تجتاز" : "دون العتبة"} |
 | دقة الطبقة ١ | ${f(p1)} | ٩٥٪ | ${p1 === null ? "—" : p1 >= 0.95 ? "تجتاز" : "دون العتبة"} |
 | دقة الطبقة ٢ | ${f(p2)} | ٧٠٪ | ${p2 === null ? "—" : p2 >= 0.7 ? "تجتاز" : "دون العتبة"} |
 | المكسب الصحيح المقدّر | ${ar(Math.round(estGain))} موضعًا | | |
