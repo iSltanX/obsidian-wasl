@@ -1,0 +1,9 @@
+.DS_Store
+node_modules/
+local/
+main.js
+*.map
+test-vault/.obsidian/workspace*.json
+test-vault/.obsidian/cache
+test-vault/.obsidian/plugins/
+test-vault/.obsidian/community-plugins.json
