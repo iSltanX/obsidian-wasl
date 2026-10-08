@@ -33,6 +33,18 @@
 
 ---
 
+### التسمية والاكتشاف (معتمد ٨ أكتوبر ٢٠٢٦)
+
+- **لا لاحقة `-arabic` في أسماء المستودعات**، ولا إعادة تسمية لخزف. دليل Obsidian يعرض `name` و`author` فقط، وبحثه يطابق الاسم والمؤلف والوصف، لا المستودع. واللاحقة تُفهم في المصادر المفتوحة على أنها تعريب لمشروع أجنبي.
+- **المستودع:** `iSltanX/obsidian-wasl`. **الاسم في المتجر:** `Wasl` على نهج `Khazaf`. **المؤلف:** `Sultan Al-Anzi` كما في خزف.
+- **وصف `manifest.json`:** «Arabic-aware unlinked mentions: finds «وبالكتابةِ» for «الكتابة», shows why, and links only with your approval.»
+- **وصف مستودع GitHub:** «Arabic-aware unlinked mentions for Obsidian. وصل: اكتشاف الإشارات العربية غير المربوطة وربطها بموافقتك».
+- **وسوم GitHub:** `obsidian`, `obsidian-plugin`, `obsidian-md`, `arabic`, `arabic-language`, `rtl`, `unlinked-mentions`, `knowledge-management`.
+- **أول سطر في README:** جملة إنجليزية تحمل Arabic، ثم العربية.
+- منظمة GitHub باسم يدل على العربية مؤجَّلة حتى يصير عدد المشاريع ثلاثة فأكثر.
+
+---
+
 ## م٠: التأسيس والقرار
 
 **الغرض:** مستودع جاهز، وجواب مُقاس على سؤال «هل الفجوة تستحق؟» قبل كتابة سطر واحد من منطق المطابقة.
