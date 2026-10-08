@@ -18,10 +18,12 @@ const path = (name: string) => fileURLToPath(new URL(`./fixtures/${name}`, impor
 const load = (name: string): Fixture[] => JSON.parse(readFileSync(path(name), "utf8"));
 const dev = load("dev.json");
 const heldout = load("heldout.json");
+const novelStyle = load("heldout-novel-style.json");
+const all = [...dev, ...heldout, ...novelStyle];
 
 describe("fixtures", () => {
-  it("ids are unique across both sets", () => {
-    const ids = [...dev, ...heldout].map((f) => f.id);
+  it("ids are unique across all sets", () => {
+    const ids = all.map((f) => f.id);
     expect(new Set(ids).size).toBe(ids.length);
   });
 
@@ -33,10 +35,12 @@ describe("fixtures", () => {
   it("sets are split by title, so tuning on dev cannot leak into held-out", () => {
     const names = (set: Fixture[]) => new Set(set.flatMap((f) => [f.target.title, ...f.target.aliases]));
     const devNames = names(dev);
-    expect([...names(heldout)].filter((n) => devNames.has(n))).toEqual([]);
+    const heldoutNames = names(heldout);
+    expect([...heldoutNames].filter((n) => devNames.has(n))).toEqual([]);
+    expect([...names(novelStyle)].filter((n) => devNames.has(n) || heldoutNames.has(n))).toEqual([]);
   });
 
-  it.each([...dev, ...heldout])("$id is well formed", (f) => {
+  it.each(all)("$id is well formed", (f) => {
     expect(["match", "context", "vault"]).toContain(f.kind);
     expect([0, 1, 2, null]).toContain(f.expect.layer);
     expect(f.why.length).toBeGreaterThan(0);
@@ -50,8 +54,8 @@ describe("fixtures", () => {
     if (f.target.indefinite !== undefined) expect(typeof f.target.indefinite).toBe("boolean");
   });
 
-  it("held-out set is locked (changes need a decision record)", () => {
-    const hash = createHash("sha256").update(readFileSync(path("heldout.json"))).digest("hex");
-    expect(hash).toBe(readFileSync(path("heldout.sha256"), "utf8").trim());
+  it.each(["heldout", "heldout-novel-style"])("%s set is locked (changes need a decision record)", (name) => {
+    const hash = createHash("sha256").update(readFileSync(path(`${name}.json`))).digest("hex");
+    expect(hash).toBe(readFileSync(path(`${name}.sha256`), "utf8").trim());
   });
 });

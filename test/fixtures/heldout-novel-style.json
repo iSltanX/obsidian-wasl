@@ -1,0 +1,768 @@
+[
+  {
+    "id": "n01",
+    "kind": "match",
+    "doc": "وَقَفَت ريمُ عِندَ البابِ طَويلًا.",
+    "target": {
+      "title": "ريم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "ريم.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "ريمُ"
+    },
+    "why": "اسم من ثلاثة أحرف بحركة إعراب",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n02",
+    "kind": "match",
+    "doc": "قالَ لِريمَ كَلِمةً واحِدةً ثُمَّ صَمَت.",
+    "target": {
+      "title": "ريم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "ريم.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "لِريمَ"
+    },
+    "why": "سابقة مفردة مشكولة على اسم من ثلاثة أحرف ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n03",
+    "kind": "match",
+    "doc": "وَريمُ لا تَنسى ما قيلَ في المَطبَخ.",
+    "target": {
+      "title": "ريم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "ريم.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "وَريمُ"
+    },
+    "why": "واو العطف المشكولة على اسم من ثلاثة أحرف ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n04",
+    "kind": "match",
+    "doc": "رَأى زَيدٌ الضَّوءَ قَبلَ الجَميع.",
+    "target": {
+      "title": "زيد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "زيد.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "زَيدٌ"
+    },
+    "why": "تنوين ضم بلا ألف",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n05",
+    "kind": "match",
+    "doc": "رَأَوا زَيدًا في السُّوقِ.",
+    "target": {
+      "title": "زيد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "زيد.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "ألف تنوين النصب تغيّر آخر الكلمة؛ خارج قواعد الحدود الحالية",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n06",
+    "kind": "match",
+    "doc": "بِزَيدٍ ثِقةٌ لا تَنكَسِر.",
+    "target": {
+      "title": "زيد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "زيد.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "بِزَيدٍ"
+    },
+    "why": "باء مشكولة على اسم من ثلاثة أحرف ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n07",
+    "kind": "match",
+    "doc": "هِندُ تَصمُتُ حينَ يَعلو الصَّوت.",
+    "target": {
+      "title": "هند",
+      "aliases": [],
+      "exactOnly": true,
+      "path": "هند.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "هِندُ"
+    },
+    "why": "اسم علم بوضع «مطابقة تامة فقط»؛ التطابق نفسه يُقبل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n08",
+    "kind": "match",
+    "doc": "وَهِندٌ أَيضًا لَم تُجِب.",
+    "target": {
+      "title": "هند",
+      "aliases": [],
+      "exactOnly": true,
+      "path": "هند.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "«مطابقة تامة فقط» تمنع السابقة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n09",
+    "kind": "match",
+    "doc": "الهِندُ بَلَدٌ بَعيد.",
+    "target": {
+      "title": "هند",
+      "aliases": [],
+      "exactOnly": true,
+      "path": "هند.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "«ال» تغيّر المعنى؛ «مطابقة تامة فقط»",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n10",
+    "kind": "match",
+    "doc": "فَهدٌ يَركُضُ في المَمَرّ.",
+    "target": {
+      "title": "فهد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "فهد.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "فَهدٌ"
+    },
+    "why": "اسم يبدأ بالفاء؛ لا تُنزع فاؤه الأصلية",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n11",
+    "kind": "match",
+    "doc": "قالَ لِفَهدٍ ما لَم يَقُلهُ لِأَحَد.",
+    "target": {
+      "title": "فهد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "فهد.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "لِفَهدٍ"
+    },
+    "why": "لام مشكولة على اسم من ثلاثة أحرف ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n12",
+    "kind": "match",
+    "doc": "لَمى تَبتَسِمُ بِلا سَبَب.",
+    "target": {
+      "title": "لمى",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "لمى.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "لَمى"
+    },
+    "why": "اسم ينتهي بألف مقصورة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n13",
+    "kind": "match",
+    "doc": "بِلَمى شَيءٌ مِنَ الحُزن.",
+    "target": {
+      "title": "لمى",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "لمى.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "بِلَمى"
+    },
+    "why": "باء على اسم من ثلاثة أحرف ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n14",
+    "kind": "match",
+    "doc": "نادِرٌ يَعرِفُ الطَّريقَ.",
+    "target": {
+      "title": "نادر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "نادر.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "نادِرٌ"
+    },
+    "why": "اسم من أربعة أحرف",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n15",
+    "kind": "match",
+    "doc": "وَنادِرًا ما يَأتي قَبلَ الفَجر.",
+    "target": {
+      "title": "نادر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "نادر.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "ظرف بألف تنوين؛ ليس الاسم",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n16",
+    "kind": "match",
+    "doc": "نَظَرَت في المِرآةِ طَويلًا.",
+    "target": {
+      "title": "المرآة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المرآة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "المِرآةِ"
+    },
+    "why": "تطابق؛ المدة في وسط الكلمة تبقى",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n17",
+    "kind": "match",
+    "doc": "وَبِالمِرآةِ تَرى ما لا يُرى.",
+    "target": {
+      "title": "المرآة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المرآة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "وَبِالمِرآةِ"
+    },
+    "why": "سوابق و+ب مشكولة على «ال»",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n18",
+    "kind": "match",
+    "doc": "مِرآةٌ مَكسورةٌ على الحائِط.",
+    "target": {
+      "title": "المرآة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المرآة.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "نكرة والخيار مطفأ",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n19",
+    "kind": "match",
+    "doc": "مِرآةٌ مَكسورةٌ على الحائِط.",
+    "target": {
+      "title": "المرآة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المرآة.md",
+      "indefinite": true
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "مِرآةٌ"
+    },
+    "why": "نكرة مع خيار الملاحظة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n20",
+    "kind": "match",
+    "doc": "فَتَحَت النافِذةَ على الحَديقة.",
+    "target": {
+      "title": "النافذة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "النافذة.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "النافِذةَ"
+    },
+    "why": "تطابق بحركة إعراب",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n21",
+    "kind": "match",
+    "doc": "لِلنافِذةِ ضَوءٌ لا يُشبِهُ غَيرَه.",
+    "target": {
+      "title": "النافذة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "النافذة.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "لِلنافِذةِ"
+    },
+    "why": "لام الجر مشكولة مع «ال» تُكتب «لل»",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n22",
+    "kind": "match",
+    "doc": "نافِذَتُها مُغلَقةٌ مُنذُ الصَّباح.",
+    "target": {
+      "title": "النافذة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "النافذة.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "نافِذَتُها"
+    },
+    "why": "لاحقة ضميرية مع قلب التاء ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n23",
+    "kind": "match",
+    "doc": "الصَّمتُ أَثقَلُ مِنَ الكَلام.",
+    "target": {
+      "title": "الصمت",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الصمت.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الصَّمتُ"
+    },
+    "why": "تطابق بشدة وحركات",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n24",
+    "kind": "match",
+    "doc": "كَالصَّمتِ تَمامًا، لا أَكثَر.",
+    "target": {
+      "title": "الصمت",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الصمت.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "كَالصَّمتِ"
+    },
+    "why": "كاف التشبيه مشكولة مع «ال»",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n25",
+    "kind": "match",
+    "doc": "صَمَتَ طَويلًا ثُمَّ خَرَج.",
+    "target": {
+      "title": "الصمت",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الصمت.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "فعل بحروف الاسم نفسها؛ النكرة مطفأة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n26",
+    "kind": "match",
+    "doc": "صَمَتَ طَويلًا ثُمَّ خَرَج.",
+    "target": {
+      "title": "الصمت",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الصمت.md",
+      "indefinite": true
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "فعل لا اسم؛ النكرة المفعّلة لا تميّزه، وهذا ثمنها المعروف",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n27",
+    "kind": "match",
+    "doc": "المَطَرُ يَهطِلُ على السَّطح.",
+    "target": {
+      "title": "المطر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المطر.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "المَطَرُ"
+    },
+    "why": "تطابق",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n28",
+    "kind": "match",
+    "doc": "وَلِلمَطَرِ رائِحةٌ تَسبِقُه.",
+    "target": {
+      "title": "المطر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المطر.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "وَلِلمَطَرِ"
+    },
+    "why": "و + لل مشكولة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n29",
+    "kind": "match",
+    "doc": "بِالقِطارِ وَصَلَ قَبلَ المَوعِد.",
+    "target": {
+      "title": "القطار",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "القطار.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "بِالقِطارِ"
+    },
+    "why": "باء مشكولة مع «ال»",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n30",
+    "kind": "match",
+    "doc": "قِطارُ الصَّباحِ لا يَنتَظِر.",
+    "target": {
+      "title": "القطار",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "القطار.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "نكرة مضافة والخيار مطفأ",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n31",
+    "kind": "match",
+    "doc": "رِسالَتُهُ الأَخيرةُ لَم تُقرَأ.",
+    "target": {
+      "title": "الرسالة",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الرسالة.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "رِسالَتُهُ"
+    },
+    "why": "لاحقة ضميرية مع قلب التاء ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n32",
+    "kind": "match",
+    "doc": "وَبِالظِّلِّ احتَمى مِنَ الشَّمس.",
+    "target": {
+      "title": "الظل",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الظل.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "وَبِالظِّلِّ"
+    },
+    "why": "نواة من حرفين لكن «ال» مرساة كافية للسوابق",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n33",
+    "kind": "match",
+    "doc": "ظِلُّها يَسبِقُها إلى الغُرفة.",
+    "target": {
+      "title": "الظل",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الظل.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "لاحقة على نواة من حرفين؛ لا تُنزع أبدًا",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n34",
+    "kind": "match",
+    "doc": "الحَجَرُ صامِتٌ على الطَّريق.",
+    "target": {
+      "title": "الحَجَر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحَجَر.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "الحَجَرُ"
+    },
+    "why": "العنوان مشكول والنص بالحركات نفسها",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n35",
+    "kind": "match",
+    "doc": "حُجِرَ عَلَيهِ في البَيت.",
+    "target": {
+      "title": "الحَجَر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحَجَر.md",
+      "indefinite": true
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "تشكيل متعارض في الحرف الأول رغم تفعيل النكرة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n36",
+    "kind": "match",
+    "doc": "الحجر الأسود في الزاوية.",
+    "target": {
+      "title": "الحَجَر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحَجَر.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "الحجر",
+      "flags": [
+        "unvocalized"
+      ]
+    },
+    "why": "العنوان مشكول عمدًا والنص غير مشكول",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n37",
+    "kind": "match",
+    "doc": "بِالحَجَرِ ضَرَبَ البابَ.",
+    "target": {
+      "title": "الحَجَر",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "الحَجَر.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "بِالحَجَرِ"
+    },
+    "why": "سابقة مع تشكيل مطابق",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n38",
+    "kind": "match",
+    "doc": "المِعطَفُ على الكُرسيِّ مُنذُ أُسبوع.",
+    "target": {
+      "title": "المعطف",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المعطف.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "المِعطَفُ"
+    },
+    "why": "تطابق",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n39",
+    "kind": "match",
+    "doc": "مِعطَفُها الأَزرَقُ مُبتَلّ.",
+    "target": {
+      "title": "المعطف",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المعطف.md"
+    },
+    "expect": {
+      "layer": 2,
+      "surface": "مِعطَفُها"
+    },
+    "why": "لاحقة ضميرية ← محتمل",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n40",
+    "kind": "match",
+    "doc": "المَفاتيحُ في الجَيبِ الأَيسَر.",
+    "target": {
+      "title": "المفتاح",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المفتاح.md"
+    },
+    "expect": {
+      "layer": null
+    },
+    "why": "جمع تكسير؛ خارج المطابقة الآلية",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n41",
+    "kind": "match",
+    "doc": "وَالمِفتاحُ مَعَهُ دائِمًا.",
+    "target": {
+      "title": "المفتاح",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "المفتاح.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "وَالمِفتاحُ"
+    },
+    "why": "واو مشكولة مع «ال»",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n42",
+    "kind": "match",
+    "doc": "جَوادٌ أَصيلٌ في الحَقل.",
+    "target": {
+      "title": "جواد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "جواد.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "جَوادٌ"
+    },
+    "why": "اسم من أربعة أحرف؛ الالتباس بالمعنى الآخر خارج المطابقة",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n43",
+    "kind": "match",
+    "doc": "لِجَوادٍ رَأيٌ في كُلِّ شَيء.",
+    "target": {
+      "title": "جواد",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "جواد.md"
+    },
+    "expect": {
+      "layer": 1,
+      "surface": "لِجَوادٍ"
+    },
+    "why": "سابقة مفردة على أربعة أحرف تبقى طبقة ١",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n44",
+    "kind": "context",
+    "doc": "> قالَت ريمُ: لا أَعرِف.",
+    "target": {
+      "title": "ريم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "ريم.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "ريمُ",
+      "flags": [
+        "quote"
+      ]
+    },
+    "why": "داخل اقتباس: يُعرض موسومًا",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  },
+  {
+    "id": "n45",
+    "kind": "context",
+    "doc": "| الاسم | الدور |\n|---|---|\n| ريمُ | الرَّاوية |",
+    "target": {
+      "title": "ريم",
+      "aliases": [],
+      "exactOnly": false,
+      "path": "ريم.md"
+    },
+    "expect": {
+      "layer": 0,
+      "surface": "ريمُ",
+      "flags": [
+        "table"
+      ]
+    },
+    "why": "داخل جدول",
+    "origin": "اصطناعي ببنية نثر الرواية"
+  }
+]
