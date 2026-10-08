@@ -1,1 +1,385 @@
-/* أنماط وصل: تُبنى في المرحلة ٢ بمتغيرات Obsidian فقط. */
+/*
+ * أنماط وصل (docs/ui.md، البنود ٩ إلى ١١).
+ * متغيرات Obsidian فقط؛ خصائص منطقية فقط (لا left ولا right)؛ الأصناف تبدأ بـ wasl-.
+ */
+
+.wasl-view {
+  padding: var(--size-4-2) var(--size-4-3);
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+}
+
+/* إعادة ضبط أزرار اللوحة النصية: Obsidian يعطي button ظلًّا وخلفية وارتفاعًا */
+.wasl-view .wasl-button,
+.wasl-view .wasl-section-head,
+.wasl-view .wasl-group-name,
+.wasl-view .wasl-link-button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: var(--cursor);
+  font: inherit;
+  color: inherit;
+}
+
+.wasl-view :is(button, .wasl-card):focus-visible {
+  outline: 2px solid var(--background-modifier-border-focus);
+  outline-offset: 1px;
+}
+
+.wasl-sr-only {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ───── الرأس ───── */
+
+.wasl-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  padding-block-end: var(--size-4-2);
+  margin-block-end: var(--size-4-2);
+  border-block-end: 1px solid var(--background-modifier-border);
+}
+
+.wasl-target {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-4-1);
+}
+
+.wasl-target-name {
+  font-size: var(--font-ui-medium);
+  font-weight: var(--font-semibold);
+}
+
+.wasl-target-alias {
+  color: var(--text-muted);
+}
+
+.wasl-sep {
+  color: var(--text-faint);
+}
+
+.wasl-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+}
+
+.wasl-badge,
+.wasl-tag {
+  display: inline-block;
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-s);
+  background-color: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  line-height: 1.8;
+  white-space: nowrap;
+}
+
+.wasl-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--size-4-2);
+  min-block-size: var(--size-4-8);
+}
+
+.wasl-status-text {
+  color: var(--text-muted);
+}
+
+.wasl-status-text.is-error,
+.wasl-error {
+  color: var(--text-error);
+}
+
+.wasl-status-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  flex-shrink: 0;
+}
+
+.wasl-hidden,
+.wasl-note {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.wasl-hidden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--size-4-2);
+}
+
+.wasl-progress {
+  block-size: 2px;
+  background-color: var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  overflow: hidden;
+}
+
+.wasl-progress-bar {
+  block-size: 100%;
+  inline-size: var(--wasl-progress, 0%);
+  background-color: var(--interactive-accent);
+  transition: inline-size 0.2s ease-out;
+}
+
+.wasl-view .wasl-link-button {
+  color: var(--text-accent);
+}
+
+.wasl-empty {
+  padding-block: var(--size-4-4);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* ───── الأزرار ───── */
+
+.wasl-view .wasl-button {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: 28px;
+  padding: 0 var(--size-4-2);
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.wasl-view .wasl-button.mod-link {
+  color: var(--text-accent);
+  font-weight: var(--font-semibold);
+}
+
+.wasl-view .wasl-button.is-disabled {
+  color: var(--text-faint);
+  font-weight: inherit;
+}
+
+.wasl-view .wasl-icon-button {
+  padding: var(--size-4-1);
+}
+
+/* ───── الأقسام والمجموعات ───── */
+
+.wasl-section + .wasl-section {
+  margin-block-start: var(--size-4-3);
+}
+
+.wasl-view .wasl-section-head {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+  inline-size: 100%;
+  padding: var(--size-4-1) 2px;
+  border-radius: var(--radius-s);
+  font-weight: var(--font-semibold);
+}
+
+.wasl-hint {
+  margin-block-end: var(--size-4-2);
+  padding-inline-start: calc(var(--size-4-4) + var(--size-4-1));
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.wasl-count {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: normal;
+}
+
+.wasl-group-head .wasl-count {
+  padding-inline: var(--size-4-1);
+  border-radius: var(--radius-s);
+  background-color: var(--background-modifier-hover);
+}
+
+.wasl-group {
+  margin-block-start: var(--size-4-1);
+}
+
+.wasl-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-1);
+}
+
+.wasl-view .wasl-toggle {
+  padding: 2px;
+}
+
+.wasl-view .wasl-group-name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--size-4-1);
+  min-inline-size: 0;
+  padding: 2px var(--size-4-1);
+  border-radius: var(--radius-s);
+  font-weight: var(--font-medium);
+  overflow-wrap: anywhere;
+}
+
+.wasl-folder {
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: normal;
+}
+
+/* سهم الطي: المفتوح إلى الأسفل، والمطوي إلى نهاية السطر. الخصائص المنطقية لا تقلب الأيقونات (البند ٩) */
+.wasl-chevron {
+  display: inline-flex;
+  color: var(--text-muted);
+}
+
+.wasl-chevron svg {
+  inline-size: 14px;
+  block-size: 14px;
+  transition: transform 0.1s ease-out;
+}
+
+.wasl-chevron.is-collapsed svg {
+  transform: rotate(-90deg);
+}
+
+.wasl-view[dir="rtl"] .wasl-chevron.is-collapsed svg {
+  transform: rotate(90deg);
+}
+
+.wasl-view .wasl-show-rest {
+  margin-block: var(--size-4-1);
+  margin-inline-start: calc(var(--size-4-4) + var(--size-4-1));
+  color: var(--text-accent);
+}
+
+/* ───── البطاقة ───── */
+
+.wasl-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--size-4-2);
+  row-gap: var(--size-4-1);
+  margin-block: var(--size-4-1);
+  margin-inline-start: calc(var(--size-4-4) + var(--size-4-1));
+  padding: var(--size-4-2);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background-color: var(--background-primary);
+}
+
+.wasl-snippet {
+  flex: 1 1 100%;
+  font-family: var(--font-text);
+  font-size: var(--font-ui-medium);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  cursor: var(--cursor);
+}
+
+.wasl-card.is-visited .wasl-snippet {
+  color: var(--text-muted);
+}
+
+/* Obsidian 1.14 أبدل --text-highlight-bg بـ --highlight-background، وأبقى القديم للثيمات التي تعرّفه */
+.wasl-match {
+  background-color: var(--highlight-background, var(--text-highlight-bg, var(--text-selection)));
+  color: inherit;
+  border-radius: 2px;
+}
+
+.wasl-cut {
+  color: var(--text-muted);
+}
+
+.wasl-tags {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--size-4-1);
+}
+
+/* فروق الفئة (أ): تشرح ولا تُقلق */
+.wasl-tag.is-minor {
+  padding-inline: var(--size-4-1);
+  background-color: transparent;
+}
+
+.wasl-actions {
+  flex: 0 1 auto;
+  margin-inline-start: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--size-4-1);
+}
+
+.wasl-actions .mod-ignore {
+  margin-inline-start: var(--size-4-2);
+}
+
+/* المرور على الأجهزة التي تدعمه فقط، كي لا يعلق على اللمس */
+@media (hover: hover) {
+  .wasl-view :is(.wasl-button, .wasl-section-head, .wasl-group-name):not(.is-disabled):hover,
+  .wasl-snippet:hover {
+    background-color: var(--background-modifier-hover);
+    box-shadow: none;
+  }
+  .wasl-view .wasl-link-button:hover {
+    text-decoration: underline;
+  }
+  .wasl-view .wasl-button.is-disabled:hover {
+    background: none;
+    box-shadow: none;
+  }
+}
+
+.wasl-view :is(.wasl-button, .wasl-section-head, .wasl-group-name):not(.is-disabled):active {
+  background-color: var(--background-modifier-hover);
+  box-shadow: none;
+}
+
+/* الجوال: أهداف لمس أكبر، وفراغ بين «اربط» و«تجاهل» لأن «اربط» فعل كتابة */
+.is-mobile .wasl-view .wasl-button,
+.is-mobile .wasl-view .wasl-icon-button {
+  min-block-size: 40px;
+  min-inline-size: 40px;
+  justify-content: center;
+}
+
+.is-mobile .wasl-view :is(.wasl-toggle, .wasl-group-name, .wasl-section-head) {
+  min-block-size: 40px;
+}
+
+.is-mobile .wasl-view .wasl-toggle {
+  min-inline-size: 40px;
+  justify-content: center;
+}
+
+.is-mobile .wasl-actions .mod-ignore {
+  margin-inline-start: var(--size-4-3);
+}
+
+/* ───── الإعدادات ───── */
+
+.wasl-settings-help ul {
+  padding-inline-start: var(--size-4-6);
+}
+
+.wasl-settings-help li {
+  margin-block-end: var(--size-4-1);
+}

@@ -427,7 +427,11 @@ export class MentionsView extends ItemView {
     const s = this.plugin.s;
     const head = this.topEl.createDiv("wasl-target");
     head.createSpan({ cls: "wasl-target-name", text: t.note.title, attr: { dir: "auto" } });
-    for (const alias of t.note.aliases ?? []) head.createSpan({ cls: "wasl-target-alias", text: alias, attr: { dir: "auto" } });
+    for (const alias of t.note.aliases ?? []) {
+      // الفاصل عنصر مستقل: داخل اسم لاتيني بـdir=auto يقع على الجهة الخطأ
+      head.createSpan({ cls: "wasl-sep", text: "·", attr: { "aria-hidden": "true" } });
+      head.createSpan({ cls: "wasl-target-alias", text: alias, attr: { dir: "auto" } });
+    }
     if (t.note.exactOnly || t.note.indefinite) {
       const badges = this.topEl.createDiv("wasl-badges");
       if (t.note.exactOnly) badges.createSpan({ cls: "wasl-badge", text: s.t("exactOnly") });

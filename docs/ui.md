@@ -70,7 +70,7 @@
 
 ## ٦. البطاقة
 
-ثلاثة صفوف:
+ثلاثة أجزاء. السياق في سطر وحده، والوسوم والأفعال يتشاركان سطرًا حين يتسع، ويلتفان إلى سطرين حين يضيق. هذا يوفّر نحو ربع ارتفاع البطاقة ذات الوسم الواحد، وعنوان واحد قد يجمع أكثر من ألف موضع:
 1. **السياق:** السطر الذي فيه الموضع، والموضع مبرز.
 2. **الوسوم:** أسباب الطبقة، ثم الفروق الكتابية، ثم الأعلام.
 3. **الأفعال** بالترتيب المنطقي، محاذاة إلى نهاية السطر: «اربط» (الأبرز)، «تجاهل»، «افتح»، ثم «⋯» في الطرف. الصف يلتف (`flex-wrap`) إن ضاق، و«⋯» يبقى آخره.
@@ -79,7 +79,7 @@
 - السطر مقصوص عند حدود الكلمات إلى نحو ٤٥ حرفًا قبل الموضع ومثلها بعده.
 - علامتا القص «…» عنصران مستقلان بـ`aria-hidden="true"` عند طرفي السياق، لا حرفان داخل النص.
 - يُعرض نصًا خامًا كما في الملف (لا يُرسم Markdown)، لأن المعاينة في المرحلة ٣ تعرض النص الخام أيضًا.
-- الإبراز عنصر `mark` خاص باللوحة بخلفية `--text-highlight-bg`، لا `renderMatches`: صنفه غير موثق في تعريفات الواجهة.
+- الإبراز عنصر `mark` خاص باللوحة بخلفية `--highlight-background` (Obsidian 1.14)، ثم `--text-highlight-bg` للنسخ الأقدم وللثيمات التي تعرّفه، لا `renderMatches`: صنفه غير موثق في تعريفات الواجهة.
 - اتجاه السياق صريح، من أول حرف قوي في **السطر كاملًا**، لا في الجزء المقصوص. إن بدأ الجزء المقصوص بكلمة لاتينية في سطر عربي يبقى السياق عربي الاتجاه.
 
 **الوسوم:** أسباب الطبقة بلون `--text-muted` العادي، والفروق الكتابية أصغر وبلا خلفية، لأنها تشرح ولا تُقلق.
@@ -169,7 +169,7 @@ wasl: indefinite  # اقبل الكلمة بلا «ال» لعنوان معرّ�
 
 ## ١٠. المظهر
 
-- **متغيرات Obsidian فقط**، لا ألوان ثابتة: `--background-primary`، `--background-modifier-hover`، `--background-modifier-border`، `--background-modifier-border-focus`، `--text-normal`، `--text-muted`، `--text-faint`، `--text-accent`، `--text-error`، `--text-highlight-bg`، `--interactive-accent`، `--font-ui-smaller`، `--font-ui-small`، `--font-ui-medium`، `--font-text`، `--size-4-1` إلى `--size-4-4`، `--radius-s`، `--radius-m`.
+- **متغيرات Obsidian فقط**، لا ألوان ثابتة: `--background-primary`، `--background-modifier-hover`، `--background-modifier-border`، `--background-modifier-border-focus`، `--text-normal`، `--text-muted`، `--text-faint`، `--text-accent`، `--text-error`، `--highlight-background` (وقبله `--text-highlight-bg`)، `--interactive-accent`، `--font-ui-smaller`، `--font-ui-small`، `--font-ui-medium`، `--font-text`، `--font-medium`، `--font-semibold`، `--cursor`، `--size-4-1` إلى `--size-4-8`، `--radius-s`، `--radius-m`. والإبراز يحتاط أخيرًا بـ`--text-selection` إن غاب المتغيّران.
 - `--text-faint` للمعطّل وحده، لضعف تباينه. الوسوم والأسماء البديلة والمجلدات بـ`--text-muted`.
 - حدود البطاقة `--background-modifier-border` على خلفية `--background-primary`. `--background-secondary` يطابق خلفية الشريط غالبًا فلا يميّز البطاقة.
 - الأصناف تبدأ بـ`wasl-`. من أصناف Obsidian: `clickable-icon` لأزرار الأيقونات فقط.
