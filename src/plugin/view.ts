@@ -6,8 +6,6 @@ import {
   Notice,
   setIcon,
   TFile,
-  WorkspaceMobileDrawer,
-  WorkspaceSidedock,
   type TAbstractFile,
   type WorkspaceLeaf,
 } from "obsidian";
@@ -50,6 +48,8 @@ export class MentionsView extends ItemView {
   private lastAnnounce = 0;
   private announced = "";
   private closed = false;
+  /** ظهور اللوحة نفسها: فتح الدرج على الجوال لا يطلق حدثًا من أحداث مساحة العمل. */
+  private observer: IntersectionObserver | null = null;
   /** زمن آخر رسم كامل للوحة وهدفه؛ يقرؤه أمر القياس (ت٣). */
   lastRenderMs = 0;
   get targetPath(): string | null {
@@ -104,6 +104,8 @@ export class MentionsView extends ItemView {
     );
     this.registerEvent(ws.on("layout-change", () => this.wake()));
     this.registerEvent(ws.on("resize", () => this.wake()));
+    this.observer = new IntersectionObserver(() => this.wake());
+    this.observer.observe(this.contentEl);
     // أحداث الخزينة بعد جاهزية التخطيط: قبلها يُطلق «create» لكل ملف عند الفتح
     ws.onLayoutReady(() => {
       if (this.closed) return;
@@ -118,6 +120,7 @@ export class MentionsView extends ItemView {
 
   override async onClose(): Promise<void> {
     this.closed = true;
+    this.observer?.disconnect();
     this.scan?.stop();
     if (this.startTimer !== null) window.clearTimeout(this.startTimer);
     if (this.renderTimer !== null) window.clearTimeout(this.renderTimer);
@@ -196,8 +199,11 @@ export class MentionsView extends ItemView {
 
   private isVisible(): boolean {
     if (this.closed || !this.containerEl.isShown()) return false;
+    // مقارنة مباشرة لا instanceof: WorkspaceSidedock غير معرّف على الجوال، وWorkspaceMobileDrawer على الحاسوب
+    const { leftSplit, rightSplit } = this.app.workspace;
     const root = this.leaf.getRoot();
-    if ((root instanceof WorkspaceSidedock || root instanceof WorkspaceMobileDrawer) && root.collapsed) return false;
+    if (root === leftSplit) return !leftSplit.collapsed;
+    if (root === rightSplit) return !rightSplit.collapsed;
     return true;
   }
 

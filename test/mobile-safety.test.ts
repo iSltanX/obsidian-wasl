@@ -35,6 +35,11 @@ describe("mobile safety", () => {
     expect(text).not.toMatch(NODE_MODULES);
   });
 
+  // WorkspaceSidedock غير معرّف في نسخة الجوال وWorkspaceMobileDrawer في نسخة الحاسوب؛ instanceof عليهما يرمي خطأ
+  it.each(files)("$path: no instanceof on platform-specific workspace classes", ({ text }) => {
+    expect(text).not.toMatch(/instanceof\s+Workspace(Sidedock|MobileDrawer|RibbonItem)/);
+  });
+
   it.each(files.filter((f) => f.path.startsWith("src/core/")))(
     "$path: core stays independent of Obsidian",
     ({ text }) => {
