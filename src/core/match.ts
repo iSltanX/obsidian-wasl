@@ -31,7 +31,7 @@ import {
   type Normalized,
   type Token,
 } from "./normalize";
-import { inRanges, mask, protect, type CacheLike } from "./protect";
+import { inRanges, intersects, mask, protect, type CacheLike } from "./protect";
 
 export type Layer = 0 | 1 | 2;
 
@@ -120,7 +120,7 @@ function classify(entry: NameEntry, chain: Chain, hamzaDiffers: boolean, suffix:
   const reasons: Reason[] = [];
   let layer: Layer;
   const prefix = (): void => {
-    reasons.push({ code: "prefix", detail: clitics + (chain.art ? "ال" : "") });
+    reasons.push({ code: "prefix", detail: chain.text });
     if (chain.prep === "ل" && chain.art) reasons.push({ code: "lam-lam" });
   };
   const shortCoreGuard = (): void => {
@@ -171,7 +171,8 @@ function classify(entry: NameEntry, chain: Chain, hamzaDiffers: boolean, suffix:
   }
 
   if (suffix) {
-    if (coreLen <= 2) return null;
+    // «ال» والضمير المتصل لا يجتمعان («الكتابي» ليست الكتاب + ي)
+    if (coreLen <= 2 || chain.art) return null;
     layer = 2;
     reasons.push({ code: "suffix", detail: suffix });
   }
@@ -264,7 +265,9 @@ function candidatesFor(word: string, tokStart: number, index: TitleIndex): Candi
   return out;
 }
 
+/** الأفضل للهدف نفسه على الكلمة نفسها: الأطول (العنوان المركّب)، ثم الطبقة الأدنى، ثم العنوان قبل الاسم البديل. */
 function better(a: Mention, b: Mention): boolean {
+  if (a.end !== b.end) return a.end > b.end;
   if (a.layer !== b.layer) return a.layer < b.layer;
   if (a.isAlias !== b.isAlias) return !a.isAlias;
   return a.reasons.length < b.reasons.length;
@@ -317,6 +320,7 @@ export function findMentions(doc: string, index: TitleIndex, opts: MatchOptions 
       }
 
       const [start, end] = originalRange(n, doc, tok.s, endTok.e);
+      if (intersects(prot.protected, start, end)) continue; // حارس ثانٍ بعد التعمية: لا مقطع يحوي نطاقًا محميًا
       const surface = doc.slice(start, end);
       const reasons = [...res.reasons, ...surfaceReasons(surface, entry.name, hasMarks(entry.name))];
       if (!reasons.length) reasons.push({ code: "exact" });
@@ -327,8 +331,8 @@ export function findMentions(doc: string, index: TitleIndex, opts: MatchOptions 
         let linked = false;
         for (const k of keys) if (prot.links.has(k)) linked = true;
         if (linked) flags.push("already-linked");
-        if (index.ambiguousTitles.has(keys.values().next().value as string)) flags.push("ambiguous-target");
       }
+      if (index.ambiguousTitles.has(index.titleKeyByPath.get(entry.note.path) ?? "")) flags.push("ambiguous-target");
 
       const mention: Mention = { path: entry.note.path, name: entry.name, isAlias: entry.isAlias, start, end, surface, layer: res.layer, reasons, flags };
       const key = entry.note.path + "\u0000" + ti;
@@ -336,5 +340,5 @@ export function findMentions(doc: string, index: TitleIndex, opts: MatchOptions 
       if (!prev || better(mention, prev)) best.set(key, mention);
     }
   }
-  return [...best.values()].sort((a, b) => a.start - b.start || a.path.localeCompare(b.path));
+  return [...best.values()].sort((a, b) => a.start - b.start || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
 }

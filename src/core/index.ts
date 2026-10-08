@@ -51,6 +51,8 @@ export interface TitleIndex {
   readonly ambiguousTitles: ReadonlySet<string>;
   /** مفاتيح كل أسماء كل ملاحظة (العنوان والأسماء البديلة)، لمعرفة «مربوطة في هذه الملاحظة». */
   readonly keysByPath: ReadonlyMap<string, ReadonlySet<string>>;
+  /** مفتاح عنوان كل ملاحظة. */
+  readonly titleKeyByPath: ReadonlyMap<string, string>;
   /** عدد الأسماء المفهرسة. */
   readonly size: number;
 }
@@ -60,17 +62,32 @@ export function nameKey(name: string): string {
   return normalize(name).text.trim();
 }
 
-/** يبني مدخل اسم واحد، أو `null` إن لم يصلح للبحث (بلا حروف، أو يبدأ أو ينتهي بغير حرف كلمة). */
+/** ترقيم ASCII ملتصق بكلمة لاتينية جزء من الاسم لا زينة: «C++» و«.NET» و«C#». */
+const ASCII_SYMBOL = /^[\x21-\x2f\x3a-\x40\x5b-\x60\x7b-\x7e]$/;
+
+/**
+ * يبني مدخل اسم واحد، أو `null` إن لم يصلح للبحث.
+ * ما يحيط بالكلمات من رموز أو ترقيم («📚 كتب»، «ما هو؟») يُقصّ من مفتاح البحث ويبقى في الاسم المعروض؛
+ * إلا ترقيم ASCII الملتصق بكلمة لاتينية («C++») فهو جزء من الاسم ولا تحدّه الكلمات، فلا يُبحث.
+ */
 export function makeEntry(note: NoteInput, name: string, isAlias: boolean): NameEntry | null {
   const n = normalize(name);
-  const text = n.text.trim();
-  if (!text || !hasLetter(text)) return null;
-  const offset = n.text.indexOf(text);
+  const full = n.text.trim();
+  if (!full || !hasLetter(full)) return null;
+  const fullToks = tokenize(full);
+  const first = fullToks[0];
+  const last = fullToks[fullToks.length - 1];
+  if (!first || !last) return null;
+  const before = full.slice(0, first.s);
+  const after = full.slice(last.e);
+  const latinEdge = (edge: string, tok: { s: number; e: number }, atStart: boolean): boolean =>
+    edge.length > 0 &&
+    !isArabicLetter(full.charCodeAt(tok.s)) &&
+    ASCII_SYMBOL.test(atStart ? (edge[edge.length - 1] as string) : (edge[0] as string));
+  if (latinEdge(before, first, true) || latinEdge(after, last, false)) return null;
+  const text = full.slice(first.s, last.e);
+  const offset = n.text.indexOf(full) + first.s;
   const toks = tokenize(text);
-  const first = toks[0];
-  const last = toks[toks.length - 1];
-  // الاسم كله كلمات وفواصل؛ ما يبدأ أو ينتهي بترقيم («C++») لا تحدّه الكلمات فلا يُبحث
-  if (!first || !last || first.s !== 0 || last.e !== text.length) return null;
   const words = toks.map((t) => text.slice(t.s, t.e));
   const seps = toks.slice(1).map((t, i) => text.slice((toks[i] as { e: number }).e, t.s));
   const firstWord = words[0] as string;
@@ -107,10 +124,12 @@ export function buildIndex(notes: readonly NoteInput[], targets?: Iterable<strin
   const only = targets ? new Set(targets) : null;
   const byCore = new Map<string, NameEntry[]>();
   const keysByPath = new Map<string, Set<string>>();
+  const titleKeyByPath = new Map<string, string>();
   const titleCount = new Map<string, number>();
   let size = 0;
   for (const note of notes) {
     const titleKey = nameKey(note.title);
+    titleKeyByPath.set(note.path, titleKey);
     if (titleKey) titleCount.set(titleKey, (titleCount.get(titleKey) ?? 0) + 1);
     const keys = new Set<string>();
     if (titleKey) keys.add(titleKey);
@@ -134,5 +153,5 @@ export function buildIndex(notes: readonly NoteInput[], targets?: Iterable<strin
   }
   const ambiguousTitles = new Set<string>();
   for (const [k, c] of titleCount) if (c > 1) ambiguousTitles.add(k);
-  return { byCore, ambiguousTitles, keysByPath, size };
+  return { byCore, ambiguousTitles, keysByPath, titleKeyByPath, size };
 }

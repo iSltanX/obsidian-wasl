@@ -23,15 +23,18 @@ export function isMark(c: number): boolean {
   );
 }
 
-/** حركة تحمل صوتًا: الفتحة والضمة والكسرة والتنوين والسكون والألف الخنجرية. الشدة ليست منها. */
+/**
+ * حركة تحمل صوتًا تميّز الكلمة: الفتحة والضمة والكسرة والسكون والألف الخنجرية.
+ * الشدة ليست منها، ولا التنوين لأنه إعراب يتبدّل موضعه («كتابًا» و«كتاباً»).
+ */
 export function isVowelMark(c: number): boolean {
-  return (c >= 0x064b && c <= 0x0650) || c === 0x0652 || c === 0x0670;
+  return (c >= 0x064e && c <= 0x0650) || c === 0x0652 || c === 0x0670;
 }
 
 /** محارف لا تُرى: علامات الاتجاه، فاصل عدم الوصل، علامة ترتيب البايتات، الواصلة اللينة. */
 export function isInvisible(c: number): boolean {
   return (
-    (c >= 0x200b && c <= 0x200f) ||
+    (c >= 0x200c && c <= 0x200f) ||
     (c >= 0x202a && c <= 0x202e) ||
     (c >= 0x2060 && c <= 0x2064) ||
     (c >= 0x2066 && c <= 0x2069) ||
@@ -55,7 +58,13 @@ export function isSpace(c: number): boolean {
   return (
     c === 0x20 ||
     c === 0x09 ||
+    c === 0x0b ||
+    c === 0x0c ||
     c === 0x0d ||
+    c === 0x85 ||
+    c === 0x200b || // فاصل بلا عرض: يفصل الكلمات ولا يصلها
+    c === 0x2028 ||
+    c === 0x2029 ||
     c === 0xa0 ||
     c === 0x1680 ||
     (c >= 0x2000 && c <= 0x200a) ||
@@ -104,13 +113,22 @@ export function isWordChar(c: number): boolean {
 
 /** تركيب الهمزة والمدة المفككة على الحرف السابق، مثل ا + ٔ = أ، كي لا تضيع الهمزة. */
 const COMPOSE: ReadonlyMap<string, string> = new Map([
-  ["آ", "آ"],
-  ["أ", "أ"],
-  ["إ", "إ"],
-  ["ؤ", "ؤ"],
-  ["ئ", "ئ"],
-  ["ىٔ", "ئ"],
+  ["\u0627\u0653", "\u0622"], // ا + مدة = آ
+  ["\u0627\u0654", "\u0623"], // ا + همزة فوق = أ
+  ["\u0627\u0655", "\u0625"], // ا + همزة تحت = إ
+  ["\u0648\u0654", "\u0624"], // و + همزة = ؤ
+  ["\u064a\u0654", "\u0626"], // ي + همزة = ئ
+  ["\u0649\u0654", "\u0626"], // ى + همزة = ئ
 ]);
+
+/** توحيد حرف واحد بعد التفكيك: ک ی الفارسيتان، وألف الوصل ٱ. */
+function unifyLetter(r: string): string {
+  const c = r.charCodeAt(0);
+  if (c === 0x06a9) return "ك";
+  if (c === 0x06cc) return "ي";
+  if (c === 0x0671) return "ا";
+  return r;
+}
 
 export interface Normalized {
   /** النص المطبّع. */
@@ -165,11 +183,9 @@ export function normalize(text: string): Normalized {
     let rep = ch;
     if (isPresentationForm(c)) rep = ch.normalize("NFKC");
     else if (isArabicIndicDigit(c)) rep = String.fromCharCode(0x30 + (c >= 0x06f0 ? c - 0x06f0 : c - 0x0660));
-    else if (c === 0x06a9) rep = "ك";
-    else if (c === 0x06cc) rep = "ي";
     else if (c >= 0x41 && c < 0x0250) rep = ch.toLowerCase();
     for (let k = 0; k < rep.length; k++) {
-      const r = rep[k] as string;
+      const r = unifyLetter(rep[k] as string);
       const rc = r.charCodeAt(0);
       // أشكال العرض قد تحمل حركات أو تطويلًا أو مسافة بعد التفكيك (ﹰ = مسافة + فتحتان)
       if (isMark(rc)) addMark(r);
@@ -226,11 +242,11 @@ export function vowelsOf(marks: string): string {
   return v.sort().join("");
 }
 
-/** يوحّد همزة القطع والمدة والوصل في أول الكلمة إلى ألف، للبحث فقط (الفئة ب). */
+/** يوحّد همزة القطع والمدة في أول الكلمة إلى ألف، للبحث فقط (الفئة ب). ألف الوصل وُحّدت في التطبيع. */
 export function foldInitialHamza(word: string): string {
   const c = word.charCodeAt(0);
-  // أ إ آ ٱ
-  return c === 0x0623 || c === 0x0625 || c === 0x0622 || c === 0x0671 ? "ا" + word.slice(1) : word;
+  // أ إ آ
+  return c === 0x0623 || c === 0x0625 || c === 0x0622 ? "ا" + word.slice(1) : word;
 }
 
 /** هل في النص حرف واحد على الأقل (لا أرقام فقط)؟ */

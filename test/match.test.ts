@@ -20,6 +20,9 @@ describe("سلاسل السوابق", () => {
       expect(codes(m), w).toContain("prefix");
     }
     expect(codes(one("فللكتابة", note("الكتابة")))).toContain("lam-lam");
+    // تفصيل السابقة كما كُتبت
+    expect(one("للكتابة", note("الكتابة")).reasons.find((r) => r.code === "prefix")?.detail).toBe("لل");
+    expect(one("وبالكتابة", note("الكتابة")).reasons.find((r) => r.code === "prefix")?.detail).toBe("وبال");
   });
 
   it("«لل» المدمجة على كلمة تبدأ بلام: للغة = ل + اللغة", () => {
@@ -81,6 +84,9 @@ describe("سلاسل السوابق", () => {
     expect(one("وبجسدها", note("الجسد")).layer).toBe(2);
     expect(find("بيته", note("بت"))).toHaveLength(0);
     expect(find("ذاكرتهم", note("الذاكرة الجمعية"))).toHaveLength(0);
+    // «ال» والضمير لا يجتمعان
+    expect(find("الكتابي", note("الكتاب"))).toHaveLength(0);
+    expect(find("بالكتابه", note("الكتاب"))).toHaveLength(0);
   });
 });
 
@@ -101,6 +107,11 @@ describe("التشكيل", () => {
     expect(one("الدَّرَجَ", t).layer).toBe(0);
     expect(one("الدَّرَجُ", t).layer).toBe(0); // حركة الحرف الأخير إعراب
     expect(one("الدَرَج", t).layer).toBe(0); // الشدة ليست حركة صوتية
+  });
+
+  it("التنوين إعراب لا تمييز: موضعه قبل الألف أو عليها لا يهم", () => {
+    expect(one("قرأت كتاباً", note("كتابًا")).layer).toBe(0);
+    expect(one("قرأت كتابًا", note("كتاباً")).layer).toBe(0);
   });
 
   it("يقارن كل كلمة في العنوان المركّب", () => {
@@ -140,6 +151,26 @@ describe("الأعلام والسياق", () => {
     const idx = buildIndex([note("الكتابة"), note("الكتابة الحسية")]);
     const m = findMentions("بالكتابة الحسية", idx);
     expect(m.map((x) => x.path).sort()).toEqual(["الكتابة الحسية.md", "الكتابة.md"]);
+  });
+
+  it("العنوان المركّب لا يُطابَق عبر نطاق محمي", () => {
+    for (const doc of ["الذاكرة `x` الجمعية", "الذاكرة [[أخرى]] الجمعية", "الذاكرة %% تعليق %% الجمعية", "Machine `x` Learning"]) {
+      const idx = buildIndex([note("الذاكرة الجمعية"), note("Machine Learning")]);
+      expect(findMentions(doc, idx), doc).toHaveLength(0);
+    }
+    expect(one("الذاكرة الجمعية", note("الذاكرة الجمعية")).layer).toBe(0);
+  });
+
+  it("الاقتباس والجدول يُوسمان في نتيجة المطابقة", () => {
+    expect(one("> قالت ريم", note("ريم")).flags).toContain("quote");
+    expect(one("| ريم | راوية |", note("ريم")).flags).toContain("table");
+    expect(one("> [!tip]\n> ريم هنا", note("ريم")).flags).toContain("quote");
+  });
+
+  it("الاسم الأطول للملاحظة نفسها يُفضَّل", () => {
+    const m = one("الذكاء الاصطناعي تقنية", note("الذكاء", { aliases: ["الذكاء الاصطناعي"] }));
+    expect(m.surface).toBe("الذكاء الاصطناعي");
+    expect(m.isAlias).toBe(true);
   });
 
   it("المواضع صحيحة مع محارف خارج المستوى الأساسي قبل الكلمة", () => {

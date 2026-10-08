@@ -35,8 +35,20 @@ describe("فهرس الأسماء", () => {
 
   it("يرفض الأسماء التي لا تحدّها كلمات أو بلا حروف", () => {
     expect(makeEntry(note("C++"), "C++", false)).toBeNull();
+    expect(makeEntry(note(".NET"), ".NET", false)).toBeNull();
     expect(makeEntry(note("2030"), "2030", false)).toBeNull();
     expect(makeEntry(note("  "), "  ", false)).toBeNull();
+  });
+
+  it("يقصّ الرموز والترقيم المحيط بالكلمات من مفتاح البحث", () => {
+    const e = makeEntry(note("📚 كتب"), "📚 كتب", false)!;
+    expect(e.core).toBe("كتب");
+    expect(e.key).toBe("كتب");
+    expect(makeEntry(note("ما هو؟"), "ما هو؟", false)!.rest).toEqual(["هو"]);
+    const v = makeEntry(note("«الدَّرَج»"), "«الدَّرَج»", false)!;
+    expect(v.core).toBe("درج");
+    expect(v.vowels).toEqual([["َ", "َ", ""]]);
+    expect(makeEntry(note("Go!"), "Go!", false)).toBeNull();
   });
 
   it("يسجّل حركات العنوان ويعرف إن كان مشكولًا عمدًا", () => {
@@ -44,8 +56,9 @@ describe("فهرس الأسماء", () => {
     expect(e.core).toBe("درج");
     expect(e.vowels).toEqual([["َ", "َ", ""]]);
     expect(e.vocalized).toBe(true);
-    // حركة على الحرف الأخير وحده إعراب لا تمييز
+    // حركة على الحرف الأخير وحده إعراب لا تمييز، والتنوين إعراب أينما وقع
     expect(makeEntry(note("كتابٌ"), "كتابٌ", false)!.vocalized).toBe(false);
+    expect(makeEntry(note("كتابًا"), "كتابًا", false)!.vocalized).toBe(false);
     expect(makeEntry(note("حُبّ"), "حُبّ", false)!.vowels).toEqual([["ُ", ""]]);
   });
 

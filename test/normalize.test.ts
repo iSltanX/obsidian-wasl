@@ -41,8 +41,15 @@ describe("normalize: الفئة (أ)", () => {
     expect(normalize("٢٠٣٠ ۲۰۲۵ 7").text).toBe("2030 2025 7");
   });
 
-  it("يوحّد الكاف والياء الفارسيتين وحالة اللاتينية", () => {
+  it("يوحّد الكاف والياء الفارسيتين وحالة اللاتينية، حتى في أشكال العرض، وألف الوصل", () => {
     expect(normalize("الکتابة الحریة WRITING").text).toBe("الكتابة الحرية writing");
+    expect(normalize("\ufb8e\ufbfc").text).toBe("كي"); // ﮎ ﯼ
+    expect(normalize("ٱلْكِتَاب").text).toBe("الكتاب");
+  });
+
+  it("الفاصل بلا عرض يفصل الكلمات ولا يصلها", () => {
+    expect(normalize("كتاب\u200bجديد").text).toBe("كتاب جديد");
+    expect(normalize("كتا\u200cب").text).toBe("كتاب"); // فاصل عدم الوصل يبقى واصلًا للحروف
   });
 
   it("لا يحذف الهمزات ويركّب المفككة منها", () => {
@@ -72,9 +79,10 @@ describe("tokenize", () => {
 });
 
 describe("أدوات صغيرة", () => {
-  it("vowelsOf يستبعد الشدة ويرتّب", () => {
+  it("vowelsOf يستبعد الشدة والتنوين ويرتّب", () => {
     expect(vowelsOf("َّ")).toBe("َ");
     expect(vowelsOf("ّ")).toBe("");
+    expect(vowelsOf("ً")).toBe("");
     expect(vowelsOf("")).toBe("");
   });
   it("foldInitialHamza يوحّد أول الكلمة فقط", () => {
