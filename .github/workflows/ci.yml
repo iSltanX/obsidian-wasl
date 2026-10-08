@@ -1,9 +1,9 @@
 name: CI
 
+# الفحوص تجري محليًا (npm run check وخطّاف pre-push). هذا السير يدوي فقط،
+# لأن Actions لا تعمل على المستودع الخاص بسبب الفوترة.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:

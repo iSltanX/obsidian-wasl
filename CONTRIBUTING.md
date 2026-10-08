@@ -11,11 +11,12 @@
 
 ## طريقة العمل
 
-1. ثبّت التبعيات وشغّل الاختبارات:
+1. ثبّت التبعيات وشغّل الفحوص:
    ```bash
    npm install
-   npm test
+   npm run check
    ```
+   `npm run check` يجمع فحص الأنواع والاختبارات والبناء. و`npm install` يفعّل خطّاف `pre-push` الذي يشغّله قبل كل دفع.
 2. ابنِ الإضافة: `npm run build`، أو `npm run dev` للبناء عند كل حفظ.
 3. افتح `test-vault` في Obsidian كخزينة، وانسخ `main.js` و`manifest.json` و`styles.css` إلى `test-vault/.obsidian/plugins/wasl/`.
 4. أرفق في طلب الدمج ما جرّبته، ولقطة قبل وبعد إن مسّ التعديل الواجهة.

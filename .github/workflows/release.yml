@@ -1,9 +1,8 @@
 name: Release Obsidian plugin
 
+# الإصدارات تُبنى محليًا وتُرفع بـ gh release create. هذا السير يدوي فقط حتى تعمل Actions.
 on:
-  push:
-    tags:
-      - "*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -16,11 +15,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Check manifest version matches tag
-        run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          ver=$(jq -r .version manifest.json)
-          if [ "$tag" != "$ver" ]; then echo "Tag $tag does not match manifest version $ver"; exit 1; fi
       - run: npm ci
       - run: npm test
       - run: npm run build
@@ -28,7 +22,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          tag=$(jq -r .version manifest.json)
           gh release create "$tag" \
             --title="$tag" \
             --generate-notes \

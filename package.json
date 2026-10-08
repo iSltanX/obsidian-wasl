@@ -9,8 +9,10 @@
     "build": "tsc --noEmit && node esbuild.config.mjs production",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "check": "tsc --noEmit && vitest run && node esbuild.config.mjs production",
     "t0": "node scripts/t0-survey.mjs",
-    "version": "node version-bump.mjs && git add manifest.json versions.json"
+    "version": "node version-bump.mjs && git add manifest.json versions.json",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "author": "Sultan Al-Anzi",
   "license": "MIT",

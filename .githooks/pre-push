@@ -1,0 +1,6 @@
+#!/bin/sh
+# فحوص وصل المحلية قبل كل دفع: الأنواع والاختبارات والبناء.
+# للتجاوز في حالة طارئة: git push --no-verify
+[ -d /opt/homebrew/bin ] && PATH="/opt/homebrew/bin:$PATH"
+echo "وصل: npm run check قبل الدفع…"
+npm run -s check || { echo "وصل: الفحوص فشلت؛ أُلغي الدفع." >&2; exit 1; }
