@@ -4,6 +4,7 @@ import {
   MarkdownView,
   Menu,
   Notice,
+  Platform,
   setIcon,
   TFile,
   type TAbstractFile,
@@ -13,6 +14,7 @@ import type { Found } from "./context";
 import type WaslPlugin from "./main";
 import { nameKey } from "../core/index";
 import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type Presented } from "./present";
+import { showMeasurement } from "./measure";
 import { makeTarget, Scan, type Target } from "./scan";
 import { isExcluded } from "./settings";
 import { noteInput, noteRefs, vaultHost } from "./vault";
@@ -507,6 +509,9 @@ export class MentionsView extends ItemView {
       this.textButton(buttons, s.t("resume"), () => void this.runScan(), "st:resume");
       this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
     } else {
+      // زر القياس على الجوال (ت٣): لوحة الأوامر صعبة الوصول هناك. مؤقت، يُزال مع الأمر قبل 1.0.0
+      const file = this.app.vault.getFileByPath(t.note.path);
+      if (Platform.isMobile && mode === "done" && file) this.iconButton(buttons, "timer", s.t("measureCommand"), () => void showMeasurement(this.plugin, file), "st:measure");
       this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
     }
     if (p.hidden) {
