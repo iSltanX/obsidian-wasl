@@ -47,3 +47,10 @@ describe("summary with possible mentions", () => {
     expect(line(14, 2, 11)).toBe("١٤ موضعًا في ملاحظتين، منها ١١ موضعًا محتملًا");
   });
 });
+
+describe("command names", () => {
+  it("carry no Arabic diacritics, which Obsidian's command search does not ignore", () => {
+    const ar = strings("ar");
+    for (const k of ["commandShow", "measureCommand"] as const) expect(ar.t(k)).not.toMatch(/[ً-ٰٟ]/);
+  });
+});

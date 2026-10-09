@@ -53,7 +53,7 @@ const AR = {
   comingLater: "متاح في نسخة قادمة.",
   sourceGone: "لم تعد هذه الملاحظة موجودة.",
   // القياس (ت٣)
-  measureCommand: "قِس زمن البحث لهذه الملاحظة",
+  measureCommand: "قس زمن البحث لهذه الملاحظة",
   measureTitle: "قياس زمن البحث",
   measureRunning: "وصل يقيس زمن البحث…",
   measureTarget: "الهدف: «{name}» · {notes}",
