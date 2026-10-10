@@ -7,10 +7,17 @@ import { findMentions } from "../core/match";
 import type { CacheLike } from "../core/protect";
 import { withContext, type Found } from "./context";
 
-/** ما يلزم المسح من ملاحظة لا يُفهرس إلا عنوانها (لاكتشاف العناوين المكررة). */
+/** ما يلزم من ملاحظة لا يُفهرس اسمها: عنوانها وأسماؤها البديلة، لاكتشاف الأسماء المشتركة. */
 export interface NoteRef {
   readonly path: string;
   readonly title: string;
+  readonly aliases?: readonly string[];
+}
+
+/** اسم من أسماء الهدف تحمله ملاحظات أخرى عنوانًا أو اسمًا بديلًا (الدراسة، القسم ٥ «تعدد الوجهات»). */
+export interface SharedName {
+  readonly name: string;
+  readonly paths: readonly string[];
 }
 
 export interface Target {
@@ -20,6 +27,8 @@ export interface Target {
   readonly sig: string;
   /** ملاحظات أخرى بالعنوان نفسه (تنبيه الالتباس). */
   readonly sameTitle: readonly string[];
+  /** أسماء الهدف التي تشترك فيها ملاحظات أخرى، عدا تطابق العنوانين (له `sameTitle`). */
+  readonly sharedNames: readonly SharedName[];
 }
 
 /** نسخة قواعد النواة في البصمة: تُرفع حين تتغير القواعد فلا تُعرض نتائج قديمة. */
@@ -30,6 +39,21 @@ export function makeTarget(note: NoteInput, notes: readonly NoteRef[]): Target {
   const index = buildIndex([note, ...others], [note.path]);
   const key = nameKey(note.title);
   const sameTitle = key ? others.filter((n) => nameKey(n.title) === key).map((n) => n.path) : [];
+  const sharedNames: SharedName[] = [];
+  const seen = new Set<string>();
+  for (const [name, isTitle] of [[note.title, true], ...(note.aliases ?? []).map((a): [string, boolean] => [a, false])] as [string, boolean][]) {
+    const k = nameKey(name);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    const paths: string[] = [];
+    for (const n of others) {
+      const asTitle = nameKey(n.title) === k;
+      const asAlias = (n.aliases ?? []).some((a) => nameKey(a) === k);
+      // عنوان يطابق عنوانًا له تنبيهه الخاص؛ ما عداه (اسم بديل من أي جهة) يُذكر هنا
+      if (asAlias || (asTitle && !isTitle)) paths.push(n.path);
+    }
+    if (paths.length) sharedNames.push({ name, paths });
+  }
   const sig = JSON.stringify([
     CORE_VERSION,
     note.path,
@@ -39,7 +63,7 @@ export function makeTarget(note: NoteInput, notes: readonly NoteRef[]): Target {
     !!note.indefinite,
     sameTitle.length > 0,
   ]);
-  return { note, index, sig, sameTitle };
+  return { note, index, sig, sameTitle, sharedNames };
 }
 
 export interface SourceRef {

@@ -36,6 +36,30 @@ describe("makeTarget", () => {
       { path: "ج.md", title: "ج" },
     ]);
     expect(t.sameTitle).toEqual(["ب/المعنى.md"]);
+    expect(t.sharedNames).toEqual([]);
+  });
+
+  it("lists other notes that share one of the target's names as an alias", () => {
+    const t = makeTarget({ path: "الفينومينولوجيا.md", title: "الفينومينولوجيا", aliases: ["الظاهراتية", "phenomenology"] }, [
+      { path: "الفينومينولوجيا.md", title: "الفينومينولوجيا" },
+      { path: "هوسرل.md", title: "هوسرل", aliases: ["الظّاهراتية"] },
+      { path: "الظاهراتية.md", title: "الظاهراتية" },
+      { path: "ج.md", title: "ج", aliases: ["Phenomenology"] },
+    ]);
+    expect(t.sharedNames).toEqual([
+      { name: "الظاهراتية", paths: ["هوسرل.md", "الظاهراتية.md"] },
+      { name: "phenomenology", paths: ["ج.md"] },
+    ]);
+  });
+
+  it("reports a title used as another note's alias, but not as its title", () => {
+    const t = makeTarget({ path: "أ/المعنى.md", title: "المعنى" }, [
+      { path: "أ/المعنى.md", title: "المعنى" },
+      { path: "ب/المعنى.md", title: "المعنى" },
+      { path: "الدلالة.md", title: "الدلالة", aliases: ["المعنى"] },
+    ]);
+    expect(t.sameTitle).toEqual(["ب/المعنى.md"]);
+    expect(t.sharedNames).toEqual([{ name: "المعنى", paths: ["الدلالة.md"] }]);
   });
 });
 

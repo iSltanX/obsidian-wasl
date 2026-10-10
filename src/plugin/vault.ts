@@ -9,9 +9,12 @@ export function noteInput(app: App, file: TFile): NoteInput {
   return { path: file.path, title: file.basename, aliases: parseFrontMatterAliases(fm) ?? [], ...noteOptions(fm?.["wasl"]) };
 }
 
-/** كل الملاحظات بعناوينها، ومنها المستثناة: الالتباس يخص الخزينة كلها. */
+/** كل الملاحظات بعناوينها وأسمائها البديلة، ومنها المستثناة: الالتباس يخص الخزينة كلها. */
 export function noteRefs(app: App): NoteRef[] {
-  return app.vault.getMarkdownFiles().map((f) => ({ path: f.path, title: f.basename }));
+  return app.vault.getMarkdownFiles().map((f) => {
+    const aliases = parseFrontMatterAliases(app.metadataCache.getFileCache(f)?.frontmatter);
+    return aliases?.length ? { path: f.path, title: f.basename, aliases } : { path: f.path, title: f.basename };
+  });
 }
 
 /** الوصول إلى الخزينة للمسح: قراءة للعرض (`cachedRead`) وبيانات Obsidian لكل ملف. */

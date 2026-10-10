@@ -22,6 +22,12 @@ export class WaslSettingTab extends PluginSettingTab {
     containerEl.addClass("wasl-settings");
     containerEl.dir = s.lang === "ar" ? "rtl" : "ltr";
 
+    // تحديث الروابط التلقائي ليس في الواجهة العامة؛ إن غاب `getConfig` لا يظهر التنبيه
+    const vault = this.app.vault as unknown as { getConfig?: (key: string) => unknown };
+    if (typeof vault.getConfig === "function" && vault.getConfig("alwaysUpdateLinks") === false) {
+      containerEl.createDiv({ cls: "wasl-settings-warning", text: s.t("updateLinksOff") });
+    }
+
     new Setting(containerEl)
       .setName(s.t("setExcluded"))
       .setDesc(s.t("setExcludedDesc"))

@@ -488,7 +488,7 @@ export class MentionsView extends ItemView {
     const openNow = t && active && active.extension === "md" && active.path !== t.note.path ? active : null;
     const total = p ? p.mainCount + p.possibleCount : 0;
 
-    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, mode, p?.hidden, p?.ignored, this.showIgnored, total > 0, openNow?.path, scan?.failed ?? 0, this.plugin.undo.size > 0]);
+    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, t?.sharedNames, mode, p?.hidden, p?.ignored, this.showIgnored, total > 0, openNow?.path, scan?.failed ?? 0, this.plugin.undo.size > 0]);
     const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode, this.plugin.ignore.size]);
     // المؤشر مضغوط داخل اللوحة: يؤجَّل البناء حتى يُرفع، كي تصل النقرة إلى العنصر الذي ضُغط
     const focus = this.focusKey();
@@ -638,6 +638,10 @@ export class MentionsView extends ItemView {
         })
         .join(s.t("listSep"));
       this.topEl.createDiv({ cls: "wasl-note", text: s.t("ambiguous", { folders }) });
+    }
+    for (const shared of t.sharedNames) {
+      const notes = shared.paths.map((p) => `«${basename(p)}»`).join(s.t("listSep"));
+      this.topEl.createDiv({ cls: "wasl-note", text: s.t("sharedName", { name: shared.name, notes }) });
     }
     if (openNow) {
       const line = this.topEl.createDiv("wasl-note wasl-open-now");

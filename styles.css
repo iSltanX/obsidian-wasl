@@ -443,6 +443,16 @@
 
 /* ───── الإعدادات ───── */
 
+.wasl-settings-warning {
+  margin-block-end: var(--size-4-4);
+  padding: var(--size-4-2) var(--size-4-3);
+  border-inline-start: 3px solid var(--text-warning);
+  border-radius: var(--radius-s);
+  background-color: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+
 .wasl-settings-help ul {
   padding-inline-start: var(--size-4-6);
 }
