@@ -69,6 +69,7 @@ const AR = {
   linkAmbiguous: "تكرر السياق نفسه في الملاحظة فلم يُحدَّد الموضع؛ أعد البحث.",
   linkProtected: "صار الموضع داخل رابط أو كود أو عنوان؛ أعد البحث.",
   linkFailed: "تعذّر الربط.",
+  linkRegenerated: "تغيّر شكل الرابط منذ المعاينة؛ راجعه ثم أكّد.",
   // التراجع (الخطوة ٣.٣)
   undoCommand: "تراجع عن آخر ربط",
   undoDone: "أُلغي الربط في «{name}».",
@@ -187,6 +188,7 @@ const EN: Record<Key, string> = {
   linkAmbiguous: "The same context occurs more than once in the note, so the mention could not be pinned down; search again.",
   linkProtected: "The mention is now inside a link, code or heading; search again.",
   linkFailed: "Couldn't link.",
+  linkRegenerated: "The link changed since the preview; check it and confirm again.",
   undoCommand: "Undo last link",
   undoDone: "Link removed in “{name}”.",
   undoStale: "The link in “{name}” is no longer as written, so it was left alone.",

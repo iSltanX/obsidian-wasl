@@ -11,6 +11,9 @@ export interface LinkRecord {
   readonly surface: string;
   /** الرابط كما كُتب حرفيًا. */
   readonly link: string;
+  /** ما حول الموضع وقت الربط (من سياق البطاقة)، كي لا يُمسّ رابط آخر مطابق كتبه المستخدم بيده. */
+  readonly before: string;
+  readonly after: string;
   readonly at: number;
 }
 
@@ -53,16 +56,21 @@ export class UndoLog {
 
 export type Reverted = { readonly ok: true; readonly text: string; readonly start: number; readonly end: number } | { readonly ok: false; readonly reason: "changed" | "ambiguous" };
 
-/** يعيد المقطع مكان الرابط إن كان الرابط ما زال كما كُتب، في موضعه أو في موضع واحد غيره. */
+function contextAt(doc: string, r: LinkRecord, start: number): boolean {
+  return start >= r.before.length && doc.startsWith(r.link, start) && doc.slice(start - r.before.length, start) === r.before && doc.startsWith(r.after, start + r.link.length);
+}
+
+/** يعيد المقطع مكان الرابط إن كان الرابط ما زال كما كُتب بسياقه، في موضعه أو في موضع واحد غيره. */
 export function revertLink(doc: string, r: LinkRecord): Reverted {
   let start = -1;
-  if (doc.startsWith(r.link, r.start)) {
+  if (contextAt(doc, r, r.start)) {
     start = r.start;
   } else {
-    const first = doc.indexOf(r.link);
+    const needle = r.before + r.link + r.after;
+    const first = doc.indexOf(needle);
     if (first < 0) return { ok: false, reason: "changed" };
-    if (doc.indexOf(r.link, first + 1) >= 0) return { ok: false, reason: "ambiguous" };
-    start = first;
+    if (doc.indexOf(needle, first + 1) >= 0) return { ok: false, reason: "ambiguous" };
+    start = first + r.before.length;
   }
   const end = start + r.link.length;
   return { ok: true, text: doc.slice(0, start) + r.surface + doc.slice(end), start, end };

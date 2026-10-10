@@ -6,8 +6,9 @@
  */
 
 import { isMark, isWordChar } from "../core/normalize";
-import { intersects, protect, type CacheLike } from "../core/protect";
+import { inRanges, intersects, protect, type CacheLike } from "../core/protect";
 import type { Snippet } from "./context";
+import { escapeForTable } from "./link";
 
 /** ما يلزم لإيجاد الموضع من جديد: المقطع وموضعه وسطر سياقه كما حُفظ وقت البحث. */
 export interface Locator {
@@ -25,7 +26,7 @@ export function locatorOf(start: number, surface: string, snippet: Snippet): Loc
 export type LocateFailure = "changed" | "ambiguous" | "protected";
 
 export type Located =
-  | { readonly ok: true; readonly start: number; readonly end: number; readonly moved: boolean }
+  | { readonly ok: true; readonly start: number; readonly end: number; readonly moved: boolean; readonly inTable: boolean }
   | { readonly ok: false; readonly reason: LocateFailure };
 
 function contextAt(doc: string, loc: Locator, start: number): boolean {
@@ -51,27 +52,36 @@ function wholeWord(doc: string, start: number, end: number): boolean {
 export function locate(doc: string, loc: Locator, cache?: CacheLike): Located {
   let start = -1;
   let moved = false;
-  if (contextAt(doc, loc, loc.start)) {
+  if (contextAt(doc, loc, loc.start) && wholeWord(doc, loc.start, loc.start + loc.surface.length)) {
     start = loc.start;
   } else {
+    // بالسياق كاملًا، وكلمةً كاملة: السياق الفارغ (الكلمة وحدها في سطرها) لا يطابق جزء كلمة أطول
     const needle = loc.before + loc.surface + loc.after;
-    const first = doc.indexOf(needle);
-    if (first < 0) return { ok: false, reason: "changed" };
-    if (doc.indexOf(needle, first + 1) >= 0) return { ok: false, reason: "ambiguous" };
-    start = first + loc.before.length;
+    const hits: number[] = [];
+    for (let i = doc.indexOf(needle); i >= 0; i = doc.indexOf(needle, i + 1)) {
+      const s = i + loc.before.length;
+      if (wholeWord(doc, s, s + loc.surface.length)) hits.push(s);
+      if (hits.length > 1) return { ok: false, reason: "ambiguous" };
+    }
+    if (hits.length !== 1) return { ok: false, reason: "changed" };
+    start = hits[0] as number;
     moved = true;
   }
   const end = start + loc.surface.length;
-  if (!wholeWord(doc, start, end)) return { ok: false, reason: "changed" };
-  if (intersects(protect(doc, moved ? undefined : cache).protected, start, end)) return { ok: false, reason: "protected" };
-  return { ok: true, start, end, moved };
+  const prot = protect(doc, moved ? undefined : cache);
+  if (intersects(prot.protected, start, end)) return { ok: false, reason: "protected" };
+  return { ok: true, start, end, moved, inTable: inRanges(prot.tables, start) };
 }
 
-export type Applied = { readonly ok: true; readonly text: string; readonly start: number; readonly end: number } | { readonly ok: false; readonly reason: LocateFailure };
+export type Applied = { readonly ok: true; readonly text: string; readonly link: string; readonly start: number; readonly end: number } | { readonly ok: false; readonly reason: LocateFailure };
 
-/** النص بعد وضع الرابط مكان المقطع، أو سبب الامتناع. */
+/**
+ * النص بعد وضع الرابط مكان المقطع، أو سبب الامتناع. `link` بلا تهريب الجدول؛ يُهرَّب هنا
+ * بحسب حالة السطر وقت الكتابة لا وقت البحث.
+ */
 export function applyLink(doc: string, loc: Locator, link: string, cache?: CacheLike): Applied {
   const at = locate(doc, loc, cache);
   if (!at.ok) return at;
-  return { ok: true, text: doc.slice(0, at.start) + link + doc.slice(at.end), start: at.start, end: at.end };
+  const final = at.inTable ? escapeForTable(link) : link;
+  return { ok: true, text: doc.slice(0, at.start) + final + doc.slice(at.end), link: final, start: at.start, end: at.end };
 }

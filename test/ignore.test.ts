@@ -76,6 +76,31 @@ describe("IgnoreList", () => {
     expect(list.size).toBe(0);
   });
 
+  it("removes both rules at once when a mention is hidden twice", () => {
+    const list = new IgnoreList();
+    list.ignoreForm(T, formKey(m.surface));
+    list.ignoreMention(T, S, fingerprint(m.surface, m.snippet));
+    expect(list.unignore(T, S, m)).toBe(true);
+    expect(list.isIgnored(T, S, m)).toBeNull();
+    expect(list.size).toBe(0);
+  });
+
+  it("handles nested folders, look-alike siblings and repeated events", () => {
+    const list = new IgnoreList();
+    list.ignoreMention("فصول/أ/الهدف.md", "فصول/ب.md", "f");
+    list.ignoreMention("فصول 2/x.md", "فصول.md", "g");
+    expect(list.rename("فصول", "أجزاء")).toBe(true);
+    expect(list.toJSON().mentions).toEqual([
+      { t: "أجزاء/أ/الهدف.md", s: "أجزاء/ب.md", f: "f" },
+      { t: "فصول 2/x.md", s: "فصول.md", f: "g" },
+    ]);
+    // حدث الملف الفرعي بعد حدث المجلد: لا أثر ثانٍ
+    expect(list.rename("فصول/أ/الهدف.md", "أجزاء/أ/الهدف.md")).toBe(false);
+    const v = list.version;
+    expect(list.rename("لا شيء", "آخر")).toBe(false);
+    expect(list.version).toBe(v);
+  });
+
   it("reads stored data and skips broken entries", () => {
     const list = IgnoreList.read({ mentions: [{ t: T, s: S, f: "f" }, { t: T }, 3], forms: [{ t: T, w: "w" }, { t: 1, w: "x" }] });
     expect(list.toJSON()).toEqual({ mentions: [{ t: T, s: S, f: "f" }], forms: [{ t: T, w: "w" }] });

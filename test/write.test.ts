@@ -10,7 +10,7 @@ const link = "[[الكتابة|وبالكتابةِ]]";
 
 describe("locate", () => {
   it("accepts the recorded position when the context is unchanged", () => {
-    expect(locate(doc, loc)).toEqual({ ok: true, start, end: start + word.length, moved: false });
+    expect(locate(doc, loc)).toEqual({ ok: true, start, end: start + word.length, moved: false, inTable: false });
   });
 
   it("finds the mention again when text was inserted before it", () => {
@@ -52,6 +52,45 @@ describe("locate", () => {
     expect(locate(doc, loc, cache)).toEqual({ ok: false, reason: "protected" });
     // بعد التحرّك تُهمل المواضع القديمة ويكفي الماسح الخفيف
     expect(locate("أ\n" + doc, loc, cache)).toMatchObject({ ok: true, moved: true });
+  });
+});
+
+describe("locate edge cases", () => {
+  it("relocates across CRLF line endings, as editor text differs from disk text", () => {
+    const crlf = doc.replace(/\n/g, "\r\n");
+    const onDisk = crlf.indexOf(word);
+    const l = locatorOf(onDisk, word, snippetFor(crlf, onDisk, onDisk + word.length));
+    expect(l.before.includes("\r") || l.after.includes("\r")).toBe(false);
+    const r = locate(doc, l);
+    expect(r).toMatchObject({ ok: true, moved: true, start });
+  });
+
+  it("with no context, matches the word only where it stands alone", () => {
+    const bare = { ...loc, before: "", after: "" };
+    // الكلمة وحدها مرة واحدة، وجزء من كلمة أطول في مكان آخر: تُربط الوحيدة الكاملة
+    expect(locate("x\nوبالكتابةِ\nوبالكتابةِه هنا", bare)).toMatchObject({ ok: true, start: 2 });
+    // كلمتان كاملتان: التباس
+    expect(locate("وبالكتابةِ\nوبالكتابةِ", bare)).toEqual({ ok: false, reason: "ambiguous" });
+  });
+
+  it("works at the very start and end of a document", () => {
+    const d = "الكتابة";
+    const l = locatorOf(0, "الكتابة", snippetFor(d, 0, 7));
+    expect(locate(d, l)).toMatchObject({ ok: true, start: 0, end: 7 });
+    expect(locate("", l)).toEqual({ ok: false, reason: "changed" });
+  });
+
+  it("escapes the table separator by the line's state at write time, not at scan time", () => {
+    const table = "| أ | ب |\n|---|---|\n| وبالكتابةِ | ج |";
+    const at = table.indexOf(word);
+    const l = locatorOf(at, word, snippetFor(table, at, at + word.length));
+    const inTable = applyLink(table, l, link);
+    expect(inTable.ok && inTable.link).toBe("[[الكتابة\\|وبالكتابةِ]]");
+    // الموضع نفسه صار في سطر عادي (أُزيل الجدول حوله): بلا تهريب
+    const plain = "ثم وبالكتابةِ وحدها.";
+    const p = plain.indexOf(word);
+    const out = applyLink(plain, locatorOf(p, word, snippetFor(plain, p, p + word.length)), link);
+    expect(out.ok && out.link).toBe(link);
   });
 });
 

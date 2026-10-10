@@ -15,8 +15,8 @@ import type WaslPlugin from "./main";
 import { nameKey } from "../core/index";
 import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type HideReason, type Presented } from "./present";
 import { fingerprint, formKey } from "./ignore";
-import { previewAfter } from "./link";
-import { generateLink, writeLink, type WriteFailure } from "./linker";
+import { escapeForTable, previewAfter } from "./link";
+import { generateLink, plainLink, writeLink, type WriteFailure } from "./linker";
 import { showMeasurement } from "./measure";
 import { makeTarget, Scan, type Target } from "./scan";
 import { isExcluded } from "./settings";
@@ -489,7 +489,7 @@ export class MentionsView extends ItemView {
     const total = p ? p.mainCount + p.possibleCount : 0;
 
     const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, t?.sharedNames, mode, p?.hidden, p?.ignored, this.showIgnored, total > 0, openNow?.path, scan?.failed ?? 0, this.plugin.undo.size > 0]);
-    const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode, this.plugin.ignore.size]);
+    const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode, this.plugin.ignore.version]);
     // المؤشر مضغوط داخل اللوحة: يؤجَّل البناء حتى يُرفع، كي تصل النقرة إلى العنصر الذي ضُغط
     const focus = this.focusKey();
     const hold = this.pointerDownAt > 0 && Date.now() - this.pointerDownAt < HOLD_MAX;
@@ -609,6 +609,8 @@ export class MentionsView extends ItemView {
     }
     // زر الحالة تبدّل («أوقف البحث» صار «أعد البحث» مثلًا): التركيز على بديله لا على الصفحة
     if (key.startsWith("st:")) this.topEl.querySelector<HTMLElement>(".wasl-status-buttons button")?.focus({ preventScroll: true });
+    // البطاقة زالت (رُبطت أو تُجوهلت): التركيز على أول بطاقة باقية كي لا يسقط من اللوحة
+    else if (key.startsWith("[\"c") || key.startsWith("[\"m") || key.startsWith("[\"o") || key.startsWith("[\"u")) this.bodyEl.querySelector<HTMLElement>(".wasl-card")?.focus({ preventScroll: true });
   }
 
   private renderTarget(t: Target): void {
@@ -897,26 +899,45 @@ export class MentionsView extends ItemView {
     this.render();
   }
 
-  /** الكتابة بعد التحقق (الخطوة ٣.٢). عند الامتناع يُقال السبب ويُعاد مسح الملف ليُصحَّح الموضع. */
-  private async confirmLink(source: string, m: Found, link: string): Promise<void> {
+  /**
+   * الكتابة بعد التحقق (الخطوة ٣.٢). الرابط يُولَّد من جديد عند التأكيد؛ إن اختلف عمّا في المعاينة
+   * (ملاحظة جديدة بالاسم نفسه مثلًا) تُعاد المعاينة بلا كتابة. عند الامتناع يُقال السبب ويُعاد مسح الملف.
+   */
+  private async confirmLink(source: string, m: Found, previewed: string): Promise<void> {
     if (this.linking) return;
-    this.linking = true;
     const s = this.plugin.s;
-    let outcome: Awaited<ReturnType<typeof writeLink>>;
+    const targetPath = this.target?.note.path ?? null;
+    const target = this.app.vault.getFileByPath(m.path);
+    if (!target) {
+      new Notice(s.t("targetGone"));
+      this.closePreview();
+      return;
+    }
+    const link = plainLink(this.app, target, source, m.surface);
+    if ((m.flags.includes("table") ? escapeForTable(link) : link) !== previewed) {
+      new Notice(s.t("linkRegenerated"));
+      this.uiVersion++;
+      this.render();
+      return;
+    }
+    this.linking = true;
+    let outcome: Awaited<ReturnType<typeof writeLink>> | null = null;
     try {
       outcome = await writeLink(this.app, source, m, link);
     } catch (e) {
       console.error("Wasl: link failed", e);
-      outcome = { ok: false, reason: "changed" };
       new Notice(s.t("linkFailed"));
     } finally {
       this.linking = false;
     }
-    this.preview = null;
-    if (outcome.ok) {
-      this.linked.add(source + "\u0000" + m.start);
-      this.plugin.undo.push({ path: source, start: outcome.start, surface: m.surface, link, at: Date.now() });
-    } else {
+    // الهدف تبدّل أثناء الكتابة: حالة اللوحة صارت لهدف آخر فلا تُمسّ، والملف يُحدَّث على أي حال
+    const sameTarget = this.target?.note.path === targetPath;
+    if (sameTarget) this.preview = null;
+    if (outcome?.ok) {
+      if (sameTarget) this.linked.add(source + "\u0000" + m.start);
+      const sn = m.snippet;
+      this.plugin.undo.push({ path: source, start: outcome.start, surface: m.surface, link: outcome.link, before: sn.text.slice(0, sn.matchStart), after: sn.text.slice(sn.matchEnd), at: Date.now() });
+    } else if (outcome) {
       const why: Record<WriteFailure, Parameters<typeof s.t>[0]> = { changed: "linkChanged", ambiguous: "linkAmbiguous", protected: "linkProtected", missing: "sourceGone" };
       new Notice(s.t(why[outcome.reason]));
     }

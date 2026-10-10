@@ -66,9 +66,28 @@ function under(path: string, folderOrFile: string): boolean {
   return path === folderOrFile || path.startsWith(folderOrFile + "/");
 }
 
+/** بصمة كل موضع تُحسب مرة؛ المواضع كائنات ثابتة تعيش ما عاشت نتائج المسح. */
+const fingerprints = new WeakMap<Found, string>();
+
+function fingerprintOf(m: Found): string {
+  let f = fingerprints.get(m);
+  if (f === undefined) {
+    f = fingerprint(m.surface, m.snippet);
+    fingerprints.set(m, f);
+  }
+  return f;
+}
+
+const SEP = "\u0000";
+
 export class IgnoreList {
   private mentions: IgnoredMention[] = [];
   private forms: IgnoredForm[] = [];
+  /** مفاتيح مركّبة للبحث الفوري؛ تُشتق من القائمتين. */
+  private mentionKeys = new Set<string>();
+  private formKeys = new Set<string>();
+  /** يزيد مع كل تغيير، فتميّز الواجهة قائمة تبدّلت بالحجم نفسه. */
+  version = 0;
 
   /** يقرأ ما في `data.json` ويُسقط كل مدخل تالف وحده. */
   static read(raw: unknown): IgnoreList {
@@ -98,54 +117,53 @@ export class IgnoreList {
     return this.mentions.length + this.forms.length;
   }
 
-  private findMention(t: string, s: string, f: string): number {
-    return this.mentions.findIndex((m) => m.t === t && m.s === s && m.f === f);
-  }
-
-  private findForm(t: string, w: string): number {
-    return this.forms.findIndex((m) => m.t === t && m.w === w);
+  private reindex(): void {
+    this.mentionKeys = new Set(this.mentions.map((m) => m.t + SEP + m.s + SEP + m.f));
+    this.formKeys = new Set(this.forms.map((m) => m.t + SEP + m.w));
+    this.version++;
   }
 
   /** يعيد `true` إن تغيّرت القائمة. */
   ignoreMention(t: string, s: string, f: string): boolean {
-    if (this.findMention(t, s, f) >= 0) return false;
+    if (this.mentionKeys.has(t + SEP + s + SEP + f)) return false;
     this.mentions.push({ t, s, f });
+    this.reindex();
     return true;
   }
 
   ignoreForm(t: string, w: string): boolean {
-    if (!w || this.findForm(t, w) >= 0) return false;
+    if (!w || this.formKeys.has(t + SEP + w)) return false;
     this.forms.push({ t, w });
+    this.reindex();
     return true;
   }
 
   unignoreMention(t: string, s: string, f: string): boolean {
-    const i = this.findMention(t, s, f);
-    if (i < 0) return false;
-    this.mentions.splice(i, 1);
+    if (!this.mentionKeys.has(t + SEP + s + SEP + f)) return false;
+    this.mentions = this.mentions.filter((m) => !(m.t === t && m.s === s && m.f === f));
+    this.reindex();
     return true;
   }
 
   unignoreForm(t: string, w: string): boolean {
-    const i = this.findForm(t, w);
-    if (i < 0) return false;
-    this.forms.splice(i, 1);
+    if (!this.formKeys.has(t + SEP + w)) return false;
+    this.forms = this.forms.filter((m) => !(m.t === t && m.w === w));
+    this.reindex();
     return true;
   }
 
   /** لماذا يُخفى موضع: بعينه، أو لأن كلمته متجاهَلة لهذه الوجهة؛ أو `null`. */
   isIgnored(target: string, source: string, m: Found): IgnoreKind | null {
-    if (this.forms.length && this.findForm(target, formKey(m.surface)) >= 0) return "form";
-    if (this.mentions.length && this.findMention(target, source, fingerprint(m.surface, m.snippet)) >= 0) return "mention";
+    if (this.formKeys.size && this.formKeys.has(target + SEP + formKey(m.surface))) return "form";
+    if (this.mentionKeys.size && this.mentionKeys.has(target + SEP + source + SEP + fingerprintOf(m))) return "mention";
     return null;
   }
 
-  /** يُلغي ما أخفى هذا الموضع، كلمةً كان أو موضعًا بعينه. */
+  /** يُلغي كل ما أخفى هذا الموضع: الكلمة والموضع بعينه معًا إن اجتمعا، فتكفي نقرة واحدة. */
   unignore(target: string, source: string, m: Found): boolean {
-    const kind = this.isIgnored(target, source, m);
-    if (kind === "form") return this.unignoreForm(target, formKey(m.surface));
-    if (kind === "mention") return this.unignoreMention(target, source, fingerprint(m.surface, m.snippet));
-    return false;
+    const a = this.unignoreForm(target, formKey(m.surface));
+    const b = this.unignoreMention(target, source, fingerprintOf(m));
+    return a || b;
   }
 
   /** ملف أو مجلد نُقل: تتبعه المفاتيح. يعيد `true` إن تغيّر شيء. */
@@ -164,6 +182,7 @@ export class IgnoreList {
       changed = true;
       return { t, w: m.w };
     });
+    if (changed) this.reindex();
     return changed;
   }
 
@@ -172,6 +191,8 @@ export class IgnoreList {
     const before = this.size;
     this.mentions = this.mentions.filter((m) => !under(m.t, path) && !under(m.s, path));
     this.forms = this.forms.filter((m) => !under(m.t, path));
-    return this.size !== before;
+    const changed = this.size !== before;
+    if (changed) this.reindex();
+    return changed;
   }
 }

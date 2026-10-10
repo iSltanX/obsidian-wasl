@@ -39,6 +39,7 @@ export function makeTarget(note: NoteInput, notes: readonly NoteRef[]): Target {
   const index = buildIndex([note, ...others], [note.path]);
   const key = nameKey(note.title);
   const sameTitle = key ? others.filter((n) => nameKey(n.title) === key).map((n) => n.path) : [];
+  // من مفاتيح الفهرس الجاهزة (العناوين والأسماء البديلة مطبّعة)، لا تطبيع ثانٍ لكل ملاحظة
   const sharedNames: SharedName[] = [];
   const seen = new Set<string>();
   for (const [name, isTitle] of [[note.title, true], ...(note.aliases ?? []).map((a): [string, boolean] => [a, false])] as [string, boolean][]) {
@@ -47,10 +48,10 @@ export function makeTarget(note: NoteInput, notes: readonly NoteRef[]): Target {
     seen.add(k);
     const paths: string[] = [];
     for (const n of others) {
-      const asTitle = nameKey(n.title) === k;
-      const asAlias = (n.aliases ?? []).some((a) => nameKey(a) === k);
+      if (!index.keysByPath.get(n.path)?.has(k)) continue;
       // عنوان يطابق عنوانًا له تنبيهه الخاص؛ ما عداه (اسم بديل من أي جهة) يُذكر هنا
-      if (asAlias || (asTitle && !isTitle)) paths.push(n.path);
+      if (isTitle && index.titleKeyByPath.get(n.path) === k) continue;
+      paths.push(n.path);
     }
     if (paths.length) sharedNames.push({ name, paths });
   }

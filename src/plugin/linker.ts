@@ -10,17 +10,21 @@ import { applyLink, locatorOf, type LocateFailure } from "./write";
  * نفسها؛ وإن لم يصل (ملاحظتان بالاسم نفسه ولم يميّزهما) يُكتب بالمسار الكامل. وفي الجدول يُهرَّب `|`.
  */
 export function generateLink(app: App, target: TFile, sourcePath: string, surface: string, inTable: boolean): string {
-  let link = app.fileManager.generateMarkdownLink(target, sourcePath, undefined, surface);
+  return inTable ? escapeForTable(plainLink(app, target, sourcePath, surface)) : plainLink(app, target, sourcePath, surface);
+}
+
+/** الرابط بلا تهريب الجدول؛ التهريب يقرره موضع الكتابة الفعلي (write.ts). */
+export function plainLink(app: App, target: TFile, sourcePath: string, surface: string): string {
+  const link = app.fileManager.generateMarkdownLink(target, sourcePath, undefined, surface);
   const path = linkTargetPath(link);
   const dest = path === null ? null : app.metadataCache.getFirstLinkpathDest(getLinkpath(path), sourcePath);
-  if (dest?.path !== target.path) link = fullPathLink(linkFormat(link), target.path, surface);
-  return inTable ? escapeForTable(link) : link;
+  return dest?.path === target.path ? link : fullPathLink(linkFormat(link), target.path, surface);
 }
 
 export type WriteFailure = LocateFailure | "missing";
 
 export type WriteOutcome =
-  | { readonly ok: true; readonly start: number; readonly viaEditor: boolean }
+  | { readonly ok: true; readonly start: number; readonly link: string; readonly viaEditor: boolean }
   | { readonly ok: false; readonly reason: WriteFailure };
 
 /** محرر مفتوح على الملف في وضع المصدر، إن وُجد. ما يُكتب فيه يدخل سجل تراجعه (Ctrl+Z). */
@@ -36,7 +40,8 @@ const CANCEL = Symbol("wasl-cancel");
 
 /**
  * يكتب الرابط مكان الموضع بعد التحقق (write.ts): في المحرر إن كان الملف مفتوحًا في وضع المصدر،
- * وإلا بـ`vault.process` ذريًّا. الامتناع داخل `process` يكون برمي إشارة، فلا يُكتب شيء.
+ * وإلا بـ`vault.process` ذريًّا. الامتناع داخل `process` يكون برمي إشارة، فلا يُكتب شيء
+ * (جُرّب في Obsidian 1.14.4: الملف لم يتغيّر والربط التالي نجح). `link` بلا تهريب الجدول.
  */
 export async function writeLink(app: App, sourcePath: string, m: Found, link: string): Promise<WriteOutcome> {
   const file = app.vault.getFileByPath(sourcePath);
@@ -48,8 +53,8 @@ export async function writeLink(app: App, sourcePath: string, m: Found, link: st
   if (editor) {
     const r = applyLink(editor.getValue(), loc, link, cache);
     if (!r.ok) return r;
-    editor.transaction({ changes: [{ from: editor.offsetToPos(r.start), to: editor.offsetToPos(r.end), text: link }] });
-    return { ok: true, start: r.start, viaEditor: true };
+    editor.transaction({ changes: [{ from: editor.offsetToPos(r.start), to: editor.offsetToPos(r.end), text: r.link }] });
+    return { ok: true, start: r.start, link: r.link, viaEditor: true };
   }
 
   let outcome: WriteOutcome = { ok: false, reason: "changed" };
@@ -60,7 +65,7 @@ export async function writeLink(app: App, sourcePath: string, m: Found, link: st
         outcome = r;
         throw CANCEL;
       }
-      outcome = { ok: true, start: r.start, viaEditor: false };
+      outcome = { ok: true, start: r.start, link: r.link, viaEditor: false };
       return r.text;
     });
   } catch (e) {

@@ -23,6 +23,9 @@ export default class WaslPlugin extends Plugin {
   readonly undo = new UndoLog();
   /** ما تجاهله المستخدم؛ يُحفظ مع الإعدادات في `data.json`. */
   ignore = new IgnoreList();
+  private unloaded = false;
+  /** الكتابات إلى `data.json` متسلسلة، فلا تسبق كتابةٌ أقدم كتابةً أحدث. */
+  private saving: Promise<void> = Promise.resolve();
 
   override async onload(): Promise<void> {
     this.readData(await this.loadData());
@@ -53,6 +56,7 @@ export default class WaslPlugin extends Plugin {
     this.addSettingTab(new WaslSettingTab(this.app, this));
     // سجلات الربط تتبع الملفات؛ بعد جاهزية التخطيط كي لا تُستقبل أحداث الفتح
     this.app.workspace.onLayoutReady(() => {
+      if (this.unloaded) return;
       this.registerEvent(
         this.app.vault.on("rename", (file, oldPath) => {
           this.undo.rename(oldPath, file.path);
@@ -75,14 +79,23 @@ export default class WaslPlugin extends Plugin {
     this.applyLanguage();
   }
 
-  /** يكتب الإعدادات وقائمة التجاهل معًا في `data.json`. */
-  async persist(): Promise<void> {
-    await this.saveData({ ...this.settings, ignored: this.ignore.toJSON() });
+  override onunload(): void {
+    this.unloaded = true;
   }
 
-  /** يتراجع عن آخر ربط مسجّل إن كان الرابط ما زال كما كُتب؛ وإلا يُسقط السجل ويقول السبب. */
+  /** يكتب الإعدادات وقائمة التجاهل معًا في `data.json`، كتابةً بعد كتابة. */
+  persist(): Promise<void> {
+    const data = { ...this.settings, ignored: this.ignore.toJSON() };
+    this.saving = this.saving.then(() => this.saveData(data)).catch((e) => console.error("Wasl: could not save data", e));
+    return this.saving;
+  }
+
+  /**
+   * يتراجع عن آخر ربط مسجّل إن كان الرابط ما زال كما كُتب. يُسقط السجل بعد النجاح أو بعد رفض نهائي
+   * (تغيّر الرابط أو زال الملف)؛ أما الاستثناء العابر فيبقيه للمحاولة ثانية.
+   */
   async undoLastLink(): Promise<void> {
-    const r = this.undo.pop();
+    const r = this.undo.last;
     if (!r) return;
     const name = basename(r.path);
     let outcome: Awaited<ReturnType<typeof undoLink>>;
@@ -93,6 +106,7 @@ export default class WaslPlugin extends Plugin {
       new Notice(this.s.t("undoFailed"));
       return;
     }
+    if (this.undo.last === r) this.undo.pop();
     if (outcome.ok) new Notice(this.s.t("undoDone", { name }));
     else new Notice(this.s.t(outcome.reason === "missing" ? "undoGone" : "undoStale", { name }));
     const file = this.app.vault.getFileByPath(r.path);
