@@ -33,13 +33,21 @@ function withoutMd(path: string): string {
  * (ملاحظتان بالاسم نفسه ولم يميّزهما Obsidian). يُكتب بصيغة الرابط المولَّد نفسها.
  */
 export function fullPathLink(format: LinkFormat, path: string, surface: string): string {
-  if (format === "wiki") {
-    const target = withoutMd(path);
-    return surface === target.split("/").pop() ? `[[${target}]]` : `[[${target}|${surface}]]`;
-  }
+  if (format === "wiki") return `[[${withoutMd(path)}|${surface}]]`;
   // Obsidian يبقي الحروف العربية في مسارات Markdown ويهرّب المسافات وحدها؛ والأقواس تُهرَّب كي لا تُغلق الرابط
   const encoded = path.replace(/%/g, "%25").replace(/ /g, "%20").replace(/\(/g, "%28").replace(/\)/g, "%29");
   return `[${surface}](${encoded})`;
+}
+
+/**
+ * النص الظاهر يُكتب دائمًا، حتى حين يساوي اسم الملف (قرار ١٠ أكتوبر ٢٠٢٦ بعد ت٤): Obsidian يُسقطه
+ * عندها فيكتب `[[الهدف]]`، وإعادة تسمية الملاحظة لاحقًا تغيّر الكلمة داخل الجملة. `[[الهدف|الهدف]]`
+ * يبقي الكلمة كما كُتبت. رابط Markdown يحمل نصه الظاهر أصلًا.
+ */
+export function ensureAlias(link: string, surface: string): string {
+  if (linkFormat(link) !== "wiki") return link;
+  const m = /^(!?\[\[)([^\]|]*)\]\]$/.exec(link);
+  return m ? `${m[1]}${m[2]}|${surface}]]` : link;
 }
 
 /** سطر «بعد» في المعاينة: السياق نفسه والرابط مكان المقطع. */

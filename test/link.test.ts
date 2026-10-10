@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { escapeForTable, fullPathLink, linkFormat, linkTargetPath, previewAfter } from "../src/plugin/link";
+import { ensureAlias, escapeForTable, fullPathLink, linkFormat, linkTargetPath, previewAfter } from "../src/plugin/link";
 
 describe("linkFormat", () => {
   it("tells wikilinks from Markdown links", () => {
@@ -29,12 +29,24 @@ describe("fullPathLink", () => {
     expect(fullPathLink("wiki", "مجلد أ/المعنى.md", "بالمعنى")).toBe("[[مجلد أ/المعنى|بالمعنى]]");
   });
 
-  it("omits the alias when the surface is the file name", () => {
-    expect(fullPathLink("wiki", "مجلد أ/المعنى.md", "المعنى")).toBe("[[مجلد أ/المعنى]]");
+  it("keeps the alias even when the surface is the file name", () => {
+    expect(fullPathLink("wiki", "مجلد أ/المعنى.md", "المعنى")).toBe("[[مجلد أ/المعنى|المعنى]]");
   });
 
   it("escapes spaces and parentheses in Markdown paths like Obsidian, keeping Arabic letters", () => {
     expect(fullPathLink("markdown", "مجلد أ/المعنى (1).md", "بالمعنى")).toBe("[بالمعنى](مجلد%20أ/المعنى%20%281%29.md)");
+  });
+});
+
+describe("ensureAlias", () => {
+  it("adds the display text Obsidian drops for an exact match", () => {
+    expect(ensureAlias("[[الهدف]]", "الهدف")).toBe("[[الهدف|الهدف]]");
+    expect(ensureAlias("[[ملاحظات/الهدف]]", "الهدف")).toBe("[[ملاحظات/الهدف|الهدف]]");
+  });
+
+  it("leaves links that already carry display text, and Markdown links, alone", () => {
+    expect(ensureAlias("[[الهدف|وبالهدفِ]]", "وبالهدفِ")).toBe("[[الهدف|وبالهدفِ]]");
+    expect(ensureAlias("[الهدف](الهدف.md)", "الهدف")).toBe("[الهدف](الهدف.md)");
   });
 });
 

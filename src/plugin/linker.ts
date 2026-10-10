@@ -1,6 +1,6 @@
 import { getLinkpath, MarkdownView, type App, type Editor, type TFile } from "obsidian";
 import type { Found } from "./context";
-import { escapeForTable, fullPathLink, linkFormat, linkTargetPath } from "./link";
+import { ensureAlias, escapeForTable, fullPathLink, linkFormat, linkTargetPath } from "./link";
 import { revertLink, type LinkRecord } from "./undo";
 import { applyLink, locatorOf, type LocateFailure } from "./write";
 
@@ -18,7 +18,7 @@ export function plainLink(app: App, target: TFile, sourcePath: string, surface: 
   const link = app.fileManager.generateMarkdownLink(target, sourcePath, undefined, surface);
   const path = linkTargetPath(link);
   const dest = path === null ? null : app.metadataCache.getFirstLinkpathDest(getLinkpath(path), sourcePath);
-  return dest?.path === target.path ? link : fullPathLink(linkFormat(link), target.path, surface);
+  return dest?.path === target.path ? ensureAlias(link, surface) : fullPathLink(linkFormat(link), target.path, surface);
 }
 
 export type WriteFailure = LocateFailure | "missing";
