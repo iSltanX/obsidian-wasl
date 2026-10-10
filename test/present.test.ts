@@ -67,6 +67,14 @@ describe("present", () => {
     expect(p.hidden).toBe(3);
   });
 
+  it("drops just-linked mentions silently and counts ignored ones", () => {
+    const first = files[0]?.items[0] as Found;
+    const second = files[0]?.items[1] as Found;
+    const p = present(files, DEFAULT_SETTINGS, (_path, m) => (m === first ? "linked" : m === second ? "ignored" : undefined));
+    expect([p.mainCount, p.possibleCount, p.hidden, p.ignored]).toEqual([2, 2, 0, 1]);
+    expect(p.main.map((g) => g.path)).toEqual(["فصل 2.md"]);
+  });
+
   it("shows nothing from a note that already links the target when first mention only", () => {
     const linked = [{ path: "أ.md", items: [found(0, { flags: ["already-linked"] })] }];
     expect(present(linked, { ...DEFAULT_SETTINGS, firstMentionOnly: true }).noteCount).toBe(0);

@@ -13,9 +13,9 @@ import {
 import type { Found } from "./context";
 import type WaslPlugin from "./main";
 import { nameKey } from "../core/index";
-import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type Presented } from "./present";
+import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type HideReason, type Presented } from "./present";
 import { previewAfter } from "./link";
-import { generateLink } from "./linker";
+import { generateLink, writeLink, type WriteFailure } from "./linker";
 import { showMeasurement } from "./measure";
 import { makeTarget, Scan, type Target } from "./scan";
 import { isExcluded } from "./settings";
@@ -85,6 +85,10 @@ export class MentionsView extends ItemView {
   private visited = new Set<string>();
   /** البطاقة الموسّعة بمعاينة الربط (مصدر + موضع)، أو لا شيء. */
   private preview: string | null = null;
+  /** مواضع رُبطت للتو؛ تختفي فورًا ريثما يُعاد مسح ملفها. */
+  private linked = new Set<string>();
+  /** ربط جارٍ: لا يُقبل تأكيد ثانٍ قبل انتهائه. */
+  private linking = false;
 
   // أسماء لا تتعارض مع أعضاء View الداخلية غير الموثقة (open، headerEl): تعارضها يكسر فتح اللوحة
   private topEl!: HTMLElement;
@@ -210,6 +214,7 @@ export class MentionsView extends ItemView {
     this.groupLimit = { main: GROUP_STEP, possible: GROUP_STEP };
     this.visited.clear();
     this.preview = null;
+    this.linked.clear();
     this.uiVersion++;
     this.bodyEl.scrollTop = 0;
     this.contentEl.scrollTop = 0;
@@ -463,7 +468,7 @@ export class MentionsView extends ItemView {
     this.contentEl.dir = s.lang === "ar" ? "rtl" : "ltr";
     const t = this.target;
     const scan = this.scan;
-    const p = t && t.index.size ? present(scan ? scan.results.values() : [], st) : null;
+    const p = t && t.index.size ? present(scan ? scan.results.values() : [], st, (path, m) => this.hideReason(path, m)) : null;
     const running = scan ? scan.state === "running" || this.pausedHidden : !!t && (this.wantScan || this.startTimer !== null);
     const mode: Mode = !t ? "none" : !t.index.size ? "unsearchable" : running ? "running" : (scan?.state ?? "idle");
     const active = this.app.workspace.getActiveFile();
@@ -817,9 +822,44 @@ export class MentionsView extends ItemView {
     };
   }
 
-  /** الكتابة تأتي في الخطوة ٣.٢. */
-  private confirmLink(_source: string, _m: Found, _link: string): void {
-    new Notice(this.plugin.s.t("comingLater"));
+  /** لماذا يُخفى موضع من القائمة: رُبط للتو. */
+  private hideReason(source: string, m: Found): HideReason | undefined {
+    return this.linked.has(source + "\u0000" + m.start) ? "linked" : undefined;
+  }
+
+  /** الكتابة بعد التحقق (الخطوة ٣.٢). عند الامتناع يُقال السبب ويُعاد مسح الملف ليُصحَّح الموضع. */
+  private async confirmLink(source: string, m: Found, link: string): Promise<void> {
+    if (this.linking) return;
+    this.linking = true;
+    const s = this.plugin.s;
+    let outcome: Awaited<ReturnType<typeof writeLink>>;
+    try {
+      outcome = await writeLink(this.app, source, m, link);
+    } catch (e) {
+      console.error("Wasl: link failed", e);
+      outcome = { ok: false, reason: "changed" };
+      new Notice(s.t("linkFailed"));
+    } finally {
+      this.linking = false;
+    }
+    this.preview = null;
+    if (outcome.ok) {
+      this.linked.add(source + "\u0000" + m.start);
+    } else {
+      const why: Record<WriteFailure, Parameters<typeof s.t>[0]> = { changed: "linkChanged", ambiguous: "linkAmbiguous", protected: "linkProtected", missing: "sourceGone" };
+      new Notice(s.t(why[outcome.reason]));
+    }
+    this.uiVersion++;
+    this.render();
+    // الملف تغيّر (أو تبيّن أنه تغيّر): تُحدَّث نتيجته وحدها
+    const file = this.app.vault.getFileByPath(source);
+    if (file) {
+      this.refreshFile(file);
+    } else {
+      this.scan?.forget(source);
+      this.plugin.cache.drop(source);
+      this.requestRender();
+    }
   }
 
   private chevron(parent: HTMLElement, open: boolean): void {

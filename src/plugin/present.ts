@@ -79,18 +79,34 @@ export interface Presented {
   readonly noteCount: number;
   /** ما أخفته الإعدادات (اقتباسات، محتمل، أول ذكر). */
   readonly hidden: number;
+  /** ما تجاهله المستخدم. */
+  readonly ignored: number;
 }
 
 export type DisplaySettings = Pick<WaslSettings, "possible" | "quotes" | "firstMentionOnly">;
 
+/** سبب إخفاء موضع بعينه: رُبط للتو (حتى يُعاد مسح ملفه) أو تجاهله المستخدم. */
+export type HideReason = "linked" | "ignored";
+
 /** يرتب نتائج الملفات في قسمين ومجموعات حسب إعدادات العرض (البند ٥ والبند ٨ في العقد). */
-export function present(files: Iterable<Group>, settings: DisplaySettings): Presented {
+export function present(files: Iterable<Group>, settings: DisplaySettings, hide?: (path: string, m: Found) => HideReason | undefined): Presented {
   const main: Group[] = [];
   const possible: Group[] = [];
   let hidden = 0;
+  let ignored = 0;
   for (const file of files) {
     let items = file.items;
     if (!items.length) continue;
+    if (hide) {
+      const kept: Found[] = [];
+      for (const m of items) {
+        const why = hide(file.path, m);
+        if (why === "ignored") ignored++;
+        else if (!why) kept.push(m);
+      }
+      items = kept;
+      if (!items.length) continue;
+    }
     if (settings.quotes === "hidden") {
       const kept = items.filter((m) => !m.flags.includes("quote"));
       hidden += items.length - kept.length;
@@ -120,7 +136,7 @@ export function present(files: Iterable<Group>, settings: DisplaySettings): Pres
   possible.sort(byPath);
   const count = (groups: readonly Group[]): number => groups.reduce((n, g) => n + g.items.length, 0);
   const notes = new Set([...main, ...possible].map((g) => g.path));
-  return { main, possible, mainCount: count(main), possibleCount: count(possible), noteCount: notes.size, hidden };
+  return { main, possible, mainCount: count(main), possibleCount: count(possible), noteCount: notes.size, hidden, ignored };
 }
 
 /** اسم الملف بلا مجلد ولا امتداد. */
