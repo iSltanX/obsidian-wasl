@@ -1,5 +1,6 @@
 import { moment, Notice, Plugin, TFile, type TAbstractFile } from "obsidian";
 import { resolveLang, strings, type Strings } from "./i18n";
+import { IgnoreList } from "./ignore";
 import { undoLink } from "./linker";
 import { showMeasurement } from "./measure";
 import { basename } from "./present";
@@ -20,10 +21,11 @@ export default class WaslPlugin extends Plugin {
   readonly cache = new ResultCache();
   /** سجل الربط للتراجع؛ في الذاكرة ما دامت الإضافة محمّلة. */
   readonly undo = new UndoLog();
+  /** ما تجاهله المستخدم؛ يُحفظ مع الإعدادات في `data.json`. */
+  ignore = new IgnoreList();
 
   override async onload(): Promise<void> {
-    this.settings = readSettings(await this.loadData());
-    this.applyLanguage();
+    this.readData(await this.loadData());
 
     this.registerView(VIEW_TYPE, (leaf) => new MentionsView(leaf, this));
     // أسماء الأوامر بلا اسم الإضافة: Obsidian يضيفه (إرشادات الإضافات)
@@ -51,9 +53,31 @@ export default class WaslPlugin extends Plugin {
     this.addSettingTab(new WaslSettingTab(this.app, this));
     // سجلات الربط تتبع الملفات؛ بعد جاهزية التخطيط كي لا تُستقبل أحداث الفتح
     this.app.workspace.onLayoutReady(() => {
-      this.registerEvent(this.app.vault.on("rename", (file, oldPath) => this.undo.rename(oldPath, file.path)));
-      this.registerEvent(this.app.vault.on("delete", (file: TAbstractFile) => this.undo.drop(file.path)));
+      this.registerEvent(
+        this.app.vault.on("rename", (file, oldPath) => {
+          this.undo.rename(oldPath, file.path);
+          if (this.ignore.rename(oldPath, file.path)) void this.persist();
+        }),
+      );
+      this.registerEvent(
+        this.app.vault.on("delete", (file: TAbstractFile) => {
+          this.undo.drop(file.path);
+          if (this.ignore.drop(file.path)) void this.persist();
+        }),
+      );
     });
+  }
+
+  private readData(raw: unknown): void {
+    this.settings = readSettings(raw);
+    const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+    this.ignore = IgnoreList.read(r.ignored);
+    this.applyLanguage();
+  }
+
+  /** يكتب الإعدادات وقائمة التجاهل معًا في `data.json`. */
+  async persist(): Promise<void> {
+    await this.saveData({ ...this.settings, ignored: this.ignore.toJSON() });
   }
 
   /** يتراجع عن آخر ربط مسجّل إن كان الرابط ما زال كما كُتب؛ وإلا يُسقط السجل ويقول السبب. */
@@ -88,16 +112,21 @@ export default class WaslPlugin extends Plugin {
 
   /** `rescan`: تغيّر ما يُبحث فيه (المجلدات المستثناة)، لا طريقة العرض فقط. */
   async saveSettings(opts: { rescan?: boolean } = {}): Promise<void> {
-    await this.saveData(this.settings);
+    await this.persist();
     this.applyLanguage();
     this.refreshViews(opts.rescan ?? false);
   }
 
-  /** الإعدادات تغيّرت من خارج التطبيق (المزامنة). */
+  /** قائمة التجاهل تغيّرت: تُحفظ وتُعاد الرسم، بلا بحث جديد (التصفية عند العرض). */
+  async saveIgnore(): Promise<void> {
+    await this.persist();
+    this.refreshViews(false);
+  }
+
+  /** الإعدادات أو قائمة التجاهل تغيّرت من خارج التطبيق (المزامنة). */
   override async onExternalSettingsChange(): Promise<void> {
     const before = this.settings.excludedFolders.join("\n");
-    this.settings = readSettings(await this.loadData());
-    this.applyLanguage();
+    this.readData(await this.loadData());
     this.refreshViews(before !== this.settings.excludedFolders.join("\n"));
   }
 

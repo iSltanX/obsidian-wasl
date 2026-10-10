@@ -289,8 +289,13 @@
   cursor: var(--cursor);
 }
 
-.wasl-card.is-visited .wasl-snippet {
+.wasl-card.is-visited .wasl-snippet,
+.wasl-card.is-ignored .wasl-snippet {
   color: var(--text-muted);
+}
+
+.wasl-card.is-ignored {
+  border-style: dashed;
 }
 
 /* Obsidian 1.14 أبدل --text-highlight-bg بـ --highlight-background، وأبقى القديم للثيمات التي تعرّفه */

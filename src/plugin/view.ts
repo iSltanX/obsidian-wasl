@@ -14,6 +14,7 @@ import type { Found } from "./context";
 import type WaslPlugin from "./main";
 import { nameKey } from "../core/index";
 import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type HideReason, type Presented } from "./present";
+import { fingerprint, formKey } from "./ignore";
 import { previewAfter } from "./link";
 import { generateLink, writeLink, type WriteFailure } from "./linker";
 import { showMeasurement } from "./measure";
@@ -89,6 +90,8 @@ export class MentionsView extends ItemView {
   private linked = new Set<string>();
   /** ربط جارٍ: لا يُقبل تأكيد ثانٍ قبل انتهائه. */
   private linking = false;
+  /** عرض المواضع المتجاهَلة في مكانها بوسمها، لإلغاء تجاهلها. */
+  private showIgnored = false;
 
   // أسماء لا تتعارض مع أعضاء View الداخلية غير الموثقة (open، headerEl): تعارضها يكسر فتح اللوحة
   private topEl!: HTMLElement;
@@ -224,6 +227,7 @@ export class MentionsView extends ItemView {
     this.visited.clear();
     this.preview = null;
     this.linked.clear();
+    this.showIgnored = false;
     this.uiVersion++;
     this.bodyEl.scrollTop = 0;
     this.contentEl.scrollTop = 0;
@@ -484,8 +488,8 @@ export class MentionsView extends ItemView {
     const openNow = t && active && active.extension === "md" && active.path !== t.note.path ? active : null;
     const total = p ? p.mainCount + p.possibleCount : 0;
 
-    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, mode, p?.hidden, total > 0, openNow?.path, scan?.failed ?? 0, this.plugin.undo.size > 0]);
-    const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode]);
+    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, mode, p?.hidden, p?.ignored, this.showIgnored, total > 0, openNow?.path, scan?.failed ?? 0, this.plugin.undo.size > 0]);
+    const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode, this.plugin.ignore.size]);
     // المؤشر مضغوط داخل اللوحة: يؤجَّل البناء حتى يُرفع، كي تصل النقرة إلى العنصر الذي ضُغط
     const focus = this.focusKey();
     const hold = this.pointerDownAt > 0 && Date.now() - this.pointerDownAt < HOLD_MAX;
@@ -539,6 +543,11 @@ export class MentionsView extends ItemView {
       const h = this.topEl.createDiv("wasl-hidden");
       h.createSpan({ text: s.t("hiddenBySettings", { n: p.hidden }) });
       if (mode !== "running" && !p.mainCount && !p.possibleCount) this.textButton(h, s.t("openSettings"), () => this.openSettings(), "st:settings");
+    }
+    if (p.ignored || this.showIgnored) {
+      const h = this.topEl.createDiv("wasl-hidden");
+      if (p.ignored) h.createSpan({ text: s.t("ignoredCount", { n: p.ignored }) });
+      this.textButton(h, s.t(this.showIgnored ? "hideIgnored" : "showIgnored"), () => this.toggleIgnored(), "st:ignored").addClass("wasl-link-button");
     }
     if (mode === "running") {
       const bar = this.topEl.createDiv({ cls: "wasl-progress", attr: { "aria-hidden": "true" } });
@@ -755,21 +764,33 @@ export class MentionsView extends ItemView {
       return;
     }
 
+    const ignoredAs = this.showIgnored && this.target ? this.plugin.ignore.isIgnored(this.target.note.path, source, m) : null;
+    if (ignoredAs) {
+      card.addClass("is-ignored");
+      tags.createSpan({ cls: "wasl-tag", text: s.t(ignoredAs === "form" ? "tagIgnoredForm" : "tagIgnored") });
+    }
+
     const actions = card.createDiv("wasl-actions");
-    this.textButton(actions, s.t("link"), () => this.openPreview(cardId), k("mod-link")).addClass("mod-link");
-    // التجاهل معطّل حتى الخطوة ٣.٤؛ التلميح لا يظهر على اللمس فالنقر يعرض تنبيهًا
-    const ignore = this.textButton(actions, s.t("ignore"), () => new Notice(s.t("comingLater")), k("mod-ignore"));
-    ignore.addClass("mod-ignore");
-    ignore.addClass("is-disabled");
-    ignore.setAttr("aria-disabled", "true");
+    if (ignoredAs) {
+      this.textButton(actions, s.t("unignore"), () => void this.unignore(source, m), k("unignore")).addClass("mod-ignore");
+    } else {
+      this.textButton(actions, s.t("link"), () => this.openPreview(cardId), k("mod-link")).addClass("mod-link");
+      this.textButton(actions, s.t("ignore"), () => void this.ignoreMention(source, m), k("mod-ignore")).addClass("mod-ignore");
+    }
     this.textButton(actions, s.t("open"), (e) => void this.openMention(source, m, e), k("open"));
+    if (ignoredAs) return;
     const more = this.iconButton(
       actions,
       "more-horizontal",
       s.t("more"),
       () => {
         const menu = new Menu();
-        menu.addItem((item) => item.setTitle(s.t("ignoreForm")).setDisabled(true));
+        menu.addItem((item) =>
+          item
+            .setTitle(s.t("ignoreForm"))
+            .setIcon("eye-off")
+            .onClick(() => void this.ignoreForm(m)),
+        );
         // من مستطيل الزر لا من الحدث: Enter يطلق نقرة بإحداثيات صفرية، والنافذة المنبثقة لها MouseEvent آخر
         const r = more.getBoundingClientRect();
         menu.showAtPosition({ x: r.left, y: r.bottom });
@@ -833,9 +854,43 @@ export class MentionsView extends ItemView {
     };
   }
 
-  /** لماذا يُخفى موضع من القائمة: رُبط للتو. */
+  /** لماذا يُخفى موضع من القائمة: رُبط للتو، أو تجاهله المستخدم (ما لم يطلب إظهار المتجاهَل). */
   private hideReason(source: string, m: Found): HideReason | undefined {
-    return this.linked.has(source + "\u0000" + m.start) ? "linked" : undefined;
+    if (this.linked.has(source + "\u0000" + m.start)) return "linked";
+    if (!this.showIgnored && this.target && this.plugin.ignore.isIgnored(this.target.note.path, source, m)) return "ignored";
+    return undefined;
+  }
+
+  // ───── التجاهل (الخطوة ٣.٤) ─────
+
+  private async ignoreMention(source: string, m: Found): Promise<void> {
+    const t = this.target;
+    if (!t) return;
+    if (this.plugin.ignore.ignoreMention(t.note.path, source, fingerprint(m.surface, m.snippet))) await this.plugin.saveIgnore();
+    this.uiVersion++;
+    this.render();
+  }
+
+  private async ignoreForm(m: Found): Promise<void> {
+    const t = this.target;
+    if (!t) return;
+    if (this.plugin.ignore.ignoreForm(t.note.path, formKey(m.surface))) await this.plugin.saveIgnore();
+    this.uiVersion++;
+    this.render();
+  }
+
+  private async unignore(source: string, m: Found): Promise<void> {
+    const t = this.target;
+    if (!t) return;
+    if (this.plugin.ignore.unignore(t.note.path, source, m)) await this.plugin.saveIgnore();
+    this.uiVersion++;
+    this.render();
+  }
+
+  private toggleIgnored(): void {
+    this.showIgnored = !this.showIgnored;
+    this.uiVersion++;
+    this.render();
   }
 
   /** الكتابة بعد التحقق (الخطوة ٣.٢). عند الامتناع يُقال السبب ويُعاد مسح الملف ليُصحَّح الموضع. */
