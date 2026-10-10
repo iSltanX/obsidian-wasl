@@ -1,7 +1,7 @@
 {
   "id": "wasl",
   "name": "Wasl",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "minAppVersion": "1.7.2",
   "description": "Arabic-aware unlinked mentions: finds «وبالكتابةِ» for «الكتابة», shows why, and links only with your approval.",
   "author": "Sultan Al-Anzi",
