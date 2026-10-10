@@ -1,10 +1,12 @@
-import { moment, Notice, Plugin, TFile, type TAbstractFile } from "obsidian";
+import { moment, normalizePath, Notice, Plugin, TFile, type TAbstractFile } from "obsidian";
 import { resolveLang, strings, type Strings } from "./i18n";
 import { IgnoreList } from "./ignore";
 import { undoLink } from "./linker";
 import { showMeasurement } from "./measure";
 import { basename } from "./present";
 import { ResultCache } from "./scan";
+import { localDay, Stats, type Outcome, type Tag } from "./stats";
+import { renderStats } from "./stats-export";
 import { WaslSettingTab } from "./settings-tab";
 import { DEFAULT_SETTINGS, readSettings, type WaslSettings } from "./settings";
 import { UndoLog } from "./undo";
@@ -23,6 +25,8 @@ export default class WaslPlugin extends Plugin {
   readonly undo = new UndoLog();
   /** ما تجاهله المستخدم؛ يُحفظ مع الإعدادات في `data.json`. */
   ignore = new IgnoreList();
+  /** عدّادات التجربة (الخطوة ٤.١): أرقام فقط، محلية في `data.json`. */
+  stats = new Stats();
   private unloaded = false;
   /** الكتابات إلى `data.json` متسلسلة، فلا تسبق كتابةٌ أقدم كتابةً أحدث. */
   private saving: Promise<void> = Promise.resolve();
@@ -52,6 +56,7 @@ export default class WaslPlugin extends Plugin {
         return true;
       },
     });
+    this.addCommand({ id: "export-stats", name: this.s.t("statsCommand"), callback: () => void this.exportStats() });
     this.addRibbonIcon("link", this.s.t("commandShow"), () => void this.activateView());
     this.addSettingTab(new WaslSettingTab(this.app, this));
     // سجلات الربط تتبع الملفات؛ بعد جاهزية التخطيط كي لا تُستقبل أحداث الفتح
@@ -72,10 +77,14 @@ export default class WaslPlugin extends Plugin {
     });
   }
 
-  private readData(raw: unknown): void {
+  /** `merge`: تغيّر الملف من خارج التطبيق؛ العدّادات تُدمج بأخذ الأكبر فلا يُنقصها ملف أقدم. */
+  private readData(raw: unknown, merge = false): void {
     this.settings = readSettings(raw);
     const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
     this.ignore = IgnoreList.read(r.ignored);
+    const disk = Stats.read(r.stats);
+    if (merge) this.stats.mergeMax(disk);
+    else this.stats = disk;
     this.applyLanguage();
   }
 
@@ -85,7 +94,7 @@ export default class WaslPlugin extends Plugin {
 
   /** يكتب الإعدادات وقائمة التجاهل معًا في `data.json`، كتابةً بعد كتابة. */
   persist(): Promise<void> {
-    const data = { ...this.settings, ignored: this.ignore.toJSON() };
+    const data = { ...this.settings, ignored: this.ignore.toJSON(), stats: this.stats.toJSON() };
     this.saving = this.saving.then(() => this.saveData(data)).catch((e) => console.error("Wasl: could not save data", e));
     return this.saving;
   }
@@ -107,11 +116,41 @@ export default class WaslPlugin extends Plugin {
       return;
     }
     if (this.undo.last === r) this.undo.pop();
+    if (outcome.ok && r.tag) this.tally("undone", r.tag);
     if (outcome.ok) new Notice(this.s.t("undoDone", { name }));
     else new Notice(this.s.t(outcome.reason === "missing" ? "undoGone" : "undoStale", { name }));
     const file = this.app.vault.getFileByPath(r.path);
     for (const leaf of this.app.workspace.getLeavesOfType(VIEW_TYPE)) {
       if (leaf.view instanceof MentionsView) leaf.view.linkUndone(file instanceof TFile ? file : null);
+    }
+  }
+
+  /** يسجّل حكمًا للمستخدم في عدّادات اليوم ويحفظه. */
+  tally(outcome: Outcome, tag: Tag): void {
+    this.stats.record(localDay(new Date()), outcome, tag);
+    void this.persist();
+  }
+
+  /** يكتب الإحصاءات في ملاحظة جديدة باسم لا يمسّ ملفًا قائمًا، ويفتحها. */
+  async exportStats(): Promise<void> {
+    const s = this.s;
+    if (this.stats.empty) {
+      new Notice(s.t("statsEmpty"));
+      return;
+    }
+    try {
+      const day = localDay(new Date());
+      const body = renderStats(this.stats, s, { version: this.manifest.version, today: day });
+      const folder = this.app.fileManager.getNewFileParent("").path;
+      const base = s.t("statsFileName", { day });
+      let path = normalizePath(`${folder}/${base}.md`);
+      for (let n = 2; this.app.vault.getAbstractFileByPath(path) && n < 100; n++) path = normalizePath(`${folder}/${base} ${n}.md`);
+      const file = await this.app.vault.create(path, body);
+      await this.app.workspace.getLeaf("tab").openFile(file);
+      new Notice(s.t("statsExported", { name: file.basename }));
+    } catch (e) {
+      console.error("Wasl: could not export statistics", e);
+      new Notice(s.t("statsFailed"));
     }
   }
 
@@ -140,7 +179,7 @@ export default class WaslPlugin extends Plugin {
   /** الإعدادات أو قائمة التجاهل تغيّرت من خارج التطبيق (المزامنة). */
   override async onExternalSettingsChange(): Promise<void> {
     const before = this.settings.excludedFolders.join("\n");
-    this.readData(await this.loadData());
+    this.readData(await this.loadData(), true);
     this.refreshViews(before !== this.settings.excludedFolders.join("\n"));
   }
 

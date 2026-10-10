@@ -4,6 +4,8 @@
  * ما زال كما كُتب: في موضعه، أو في موضع واحد آخر إن تحرّك النص. نقي بلا `obsidian`.
  */
 
+import type { Tag } from "./stats";
+
 export interface LinkRecord {
   readonly path: string;
   readonly start: number;
@@ -15,6 +17,8 @@ export interface LinkRecord {
   readonly before: string;
   readonly after: string;
   readonly at: number;
+  /** طبقة الموضع وأسبابه، لتُسجَّل في الإحصاءات إن تُراجع عن الربط. */
+  readonly tag?: Tag;
 }
 
 export class UndoLog {

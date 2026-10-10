@@ -99,6 +99,11 @@ export class WaslSettingTab extends PluginSettingTab {
           }),
       );
 
+    new Setting(containerEl)
+      .setName(s.t("setStats"))
+      .setDesc(s.t("setStatsDesc"))
+      .addButton((b) => b.setButtonText(s.t("setStatsButton")).onClick(() => void this.plugin.exportStats()));
+
     new Setting(containerEl).setName(s.t("setPropertyHeading")).setHeading();
     const help = containerEl.createDiv({ cls: "wasl-settings-help" });
     help.createEl("p", { text: s.t("setPropertyDesc") });

@@ -15,6 +15,7 @@ import type WaslPlugin from "./main";
 import { nameKey } from "../core/index";
 import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type HideReason, type Presented } from "./present";
 import { fingerprint, formKey } from "./ignore";
+import { tagOf } from "./stats";
 import { escapeForTable, previewAfter } from "./link";
 import { generateLink, plainLink, writeLink, type WriteFailure } from "./linker";
 import { showMeasurement } from "./measure";
@@ -816,6 +817,12 @@ export class MentionsView extends ItemView {
     this.bodyEl.querySelector<HTMLElement>(".wasl-preview .mod-cta")?.focus({ preventScroll: true });
   }
 
+  /** إلغاء المستخدم للمعاينة: تردد يُسجَّل، لا حكم. */
+  private cancelPreview(m: Found): void {
+    this.plugin.tally("cancelled", tagOf(m));
+    this.closePreview();
+  }
+
   private closePreview(): void {
     this.preview = null;
     this.uiVersion++;
@@ -851,11 +858,11 @@ export class MentionsView extends ItemView {
     const actions = box.createDiv("wasl-preview-actions");
     const confirm = this.textButton(actions, s.t("confirmLink"), () => this.confirmLink(source, m, link), k("confirm"));
     confirm.addClass("mod-cta");
-    this.textButton(actions, s.t("cancel"), () => this.closePreview(), k("cancel"));
+    this.textButton(actions, s.t("cancel"), () => this.cancelPreview(m), k("cancel"));
     box.onkeydown = (e) => {
       if (e.key === "Escape") {
         e.stopPropagation();
-        this.closePreview();
+        this.cancelPreview(m);
       }
     };
   }
@@ -872,7 +879,10 @@ export class MentionsView extends ItemView {
   private async ignoreMention(source: string, m: Found): Promise<void> {
     const t = this.target;
     if (!t) return;
-    if (this.plugin.ignore.ignoreMention(t.note.path, source, fingerprint(m.surface, m.snippet))) await this.plugin.saveIgnore();
+    if (this.plugin.ignore.ignoreMention(t.note.path, source, fingerprint(m.surface, m.snippet))) {
+      this.plugin.tally("rejected", tagOf(m));
+      await this.plugin.saveIgnore();
+    }
     this.uiVersion++;
     this.render();
   }
@@ -880,7 +890,10 @@ export class MentionsView extends ItemView {
   private async ignoreForm(m: Found): Promise<void> {
     const t = this.target;
     if (!t) return;
-    if (this.plugin.ignore.ignoreForm(t.note.path, formKey(m.surface))) await this.plugin.saveIgnore();
+    if (this.plugin.ignore.ignoreForm(t.note.path, formKey(m.surface))) {
+      this.plugin.tally("formIgnored", tagOf(m));
+      await this.plugin.saveIgnore();
+    }
     this.uiVersion++;
     this.render();
   }
@@ -888,7 +901,10 @@ export class MentionsView extends ItemView {
   private async unignore(source: string, m: Found): Promise<void> {
     const t = this.target;
     if (!t) return;
-    if (this.plugin.ignore.unignore(t.note.path, source, m)) await this.plugin.saveIgnore();
+    if (this.plugin.ignore.unignore(t.note.path, source, m)) {
+      this.plugin.tally("restored", tagOf(m));
+      await this.plugin.saveIgnore();
+    }
     this.uiVersion++;
     this.render();
   }
@@ -936,7 +952,9 @@ export class MentionsView extends ItemView {
     if (outcome?.ok) {
       if (sameTarget) this.linked.add(source + "\u0000" + m.start);
       const sn = m.snippet;
-      this.plugin.undo.push({ path: source, start: outcome.start, surface: m.surface, link: outcome.link, before: sn.text.slice(0, sn.matchStart), after: sn.text.slice(sn.matchEnd), at: Date.now() });
+      const tag = tagOf(m);
+      this.plugin.tally("linked", tag);
+      this.plugin.undo.push({ path: source, start: outcome.start, surface: m.surface, link: outcome.link, before: sn.text.slice(0, sn.matchStart), after: sn.text.slice(sn.matchEnd), at: Date.now(), tag });
     } else if (outcome) {
       const why: Record<WriteFailure, Parameters<typeof s.t>[0]> = { changed: "linkChanged", ambiguous: "linkAmbiguous", protected: "linkProtected", missing: "sourceGone" };
       new Notice(s.t(why[outcome.reason]));
