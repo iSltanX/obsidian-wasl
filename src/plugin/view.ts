@@ -14,6 +14,8 @@ import type { Found } from "./context";
 import type WaslPlugin from "./main";
 import { nameKey } from "../core/index";
 import { basename, duplicateNames, folderOf, present, tagsFor, visibleCount, type Group, type Presented } from "./present";
+import { previewAfter } from "./link";
+import { generateLink } from "./linker";
 import { showMeasurement } from "./measure";
 import { makeTarget, Scan, type Target } from "./scan";
 import { isExcluded } from "./settings";
@@ -81,6 +83,8 @@ export class MentionsView extends ItemView {
   private expanded = new Set<string>();
   private groupLimit: Record<Section, number> = { main: GROUP_STEP, possible: GROUP_STEP };
   private visited = new Set<string>();
+  /** البطاقة الموسّعة بمعاينة الربط (مصدر + موضع)، أو لا شيء. */
+  private preview: string | null = null;
 
   // أسماء لا تتعارض مع أعضاء View الداخلية غير الموثقة (open، headerEl): تعارضها يكسر فتح اللوحة
   private topEl!: HTMLElement;
@@ -205,6 +209,7 @@ export class MentionsView extends ItemView {
     this.expanded.clear();
     this.groupLimit = { main: GROUP_STEP, possible: GROUP_STEP };
     this.visited.clear();
+    this.preview = null;
     this.uiVersion++;
     this.bodyEl.scrollTop = 0;
     this.contentEl.scrollTop = 0;
@@ -728,16 +733,19 @@ export class MentionsView extends ItemView {
       }
     }
 
+    const cardId = source + "\u0000" + m.start;
+    if (this.preview === cardId) {
+      this.renderPreview(card, source, m);
+      return;
+    }
+
     const actions = card.createDiv("wasl-actions");
-    // المرحلة ٢: الربط والتجاهل معطّلان؛ التلميح لا يظهر على اللمس فالنقر يعرض تنبيهًا
-    const later = (label: string, cls: string): void => {
-      const b = this.textButton(actions, label, () => new Notice(s.t("comingLater")), k(cls));
-      b.addClass(cls);
-      b.addClass("is-disabled");
-      b.setAttr("aria-disabled", "true");
-    };
-    later(s.t("link"), "mod-link");
-    later(s.t("ignore"), "mod-ignore");
+    this.textButton(actions, s.t("link"), () => this.openPreview(cardId), k("mod-link")).addClass("mod-link");
+    // التجاهل معطّل حتى الخطوة ٣.٤؛ التلميح لا يظهر على اللمس فالنقر يعرض تنبيهًا
+    const ignore = this.textButton(actions, s.t("ignore"), () => new Notice(s.t("comingLater")), k("mod-ignore"));
+    ignore.addClass("mod-ignore");
+    ignore.addClass("is-disabled");
+    ignore.setAttr("aria-disabled", "true");
     this.textButton(actions, s.t("open"), (e) => void this.openMention(source, m, e), k("open"));
     const more = this.iconButton(
       actions,
@@ -753,6 +761,65 @@ export class MentionsView extends ItemView {
       k("more"),
     );
     more.addClass("wasl-more");
+  }
+
+  // ───── المعاينة والربط (البند ٧) ─────
+
+  private openPreview(cardId: string): void {
+    this.preview = cardId;
+    this.uiVersion++;
+    this.render();
+    // التركيز على «أكّد الربط» كي يصل إليه من يستعمل لوحة المفاتيح مباشرة
+    this.bodyEl.querySelector<HTMLElement>(".wasl-preview .mod-cta")?.focus({ preventScroll: true });
+  }
+
+  private closePreview(): void {
+    this.preview = null;
+    this.uiVersion++;
+    this.render();
+  }
+
+  /** سطرا «قبل» و«بعد» بالسياق نفسه، وتحتهما «أكّد الربط» و«ألغِ». الرابط كما سيُكتب حرفيًا. */
+  private renderPreview(card: HTMLElement, source: string, m: Found): void {
+    const s = this.plugin.s;
+    const k = (action: string): string => key(action, source, m.start);
+    const target = this.app.vault.getFileByPath(m.path);
+    const box = card.createDiv("wasl-preview");
+    if (!target) {
+      box.createDiv({ cls: "wasl-error", text: s.t("targetGone") });
+      this.textButton(box.createDiv("wasl-preview-actions"), s.t("cancel"), () => this.closePreview(), k("cancel"));
+      return;
+    }
+    const link = generateLink(this.app, target, source, m.surface, m.flags.includes("table"));
+    const sn = m.snippet;
+    const after = previewAfter(sn, link);
+    const row = (label: string, text: string, from: number, to: number, cls: string): void => {
+      const r = box.createDiv("wasl-preview-row");
+      r.createSpan({ cls: "wasl-preview-label", text: label });
+      const t = r.createDiv({ cls: "wasl-preview-text", attr: { dir: sn.dir ?? "auto" } });
+      if (sn.cutStart) t.createSpan({ cls: "wasl-cut", text: "…", attr: { "aria-hidden": "true" } });
+      t.appendText(text.slice(0, from));
+      t.createEl("mark", { cls, text: text.slice(from, to) });
+      t.appendText(text.slice(to));
+      if (sn.cutEnd) t.createSpan({ cls: "wasl-cut", text: "…", attr: { "aria-hidden": "true" } });
+    };
+    row(s.t("previewBefore"), sn.text, sn.matchStart, sn.matchEnd, "wasl-match");
+    row(s.t("previewAfter"), after.text, after.linkStart, after.linkEnd, "wasl-match wasl-link-text");
+    const actions = box.createDiv("wasl-preview-actions");
+    const confirm = this.textButton(actions, s.t("confirmLink"), () => this.confirmLink(source, m, link), k("confirm"));
+    confirm.addClass("mod-cta");
+    this.textButton(actions, s.t("cancel"), () => this.closePreview(), k("cancel"));
+    box.onkeydown = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        this.closePreview();
+      }
+    };
+  }
+
+  /** الكتابة تأتي في الخطوة ٣.٢. */
+  private confirmLink(_source: string, _m: Found, _link: string): void {
+    new Notice(this.plugin.s.t("comingLater"));
   }
 
   private chevron(parent: HTMLElement, open: boolean): void {

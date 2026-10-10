@@ -374,6 +374,68 @@
   margin-inline-start: var(--size-4-3);
 }
 
+/* ───── المعاينة قبل الربط (البند ٧) ───── */
+
+.wasl-preview {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-4-1);
+  padding-block-start: var(--size-4-1);
+  border-block-start: 1px solid var(--background-modifier-border);
+}
+
+.wasl-preview-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--size-4-2);
+}
+
+.wasl-preview-label {
+  flex: 0 0 auto;
+  min-inline-size: 2.5em;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.wasl-preview-text {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  font-family: var(--font-text);
+  font-size: var(--font-ui-medium);
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+/* الرابط كما سيُكتب: علامات الرابط تبقى بلون النص، والمقطع داخله يميّزه الإبراز نفسه */
+.wasl-link-text {
+  unicode-bidi: isolate;
+}
+
+.wasl-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--size-4-2);
+}
+
+.wasl-view .wasl-button.mod-cta {
+  color: var(--text-on-accent);
+  background-color: var(--interactive-accent);
+  font-weight: var(--font-semibold);
+}
+
+@media (hover: hover) {
+  .wasl-view .wasl-button.mod-cta:hover {
+    background-color: var(--interactive-accent-hover);
+  }
+}
+
+.wasl-view .wasl-button.mod-cta:active {
+  background-color: var(--interactive-accent-hover);
+}
+
 /* ───── الإعدادات ───── */
 
 .wasl-settings-help ul {
