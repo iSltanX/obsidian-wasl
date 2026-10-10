@@ -165,6 +165,15 @@ export class MentionsView extends ItemView {
     this.wake();
   }
 
+  /** تراجُع عن ربط: يُحدَّث الملف وحده ويعود موضعه إلى القائمة. */
+  linkUndone(file: TFile | null): void {
+    if (file) {
+      for (const k of [...this.linked]) if (k.startsWith(file.path + "\u0000")) this.linked.delete(k);
+      this.refreshFile(file);
+    }
+    this.render();
+  }
+
   /** الإعدادات تغيّرت: `rescan` حين يتغيّر ما يُبحث فيه، وإلا فإعادة رسم. */
   settingsChanged(rescan: boolean): void {
     if (rescan && this.target) this.queueScan(0);
@@ -475,7 +484,7 @@ export class MentionsView extends ItemView {
     const openNow = t && active && active.extension === "md" && active.path !== t.note.path ? active : null;
     const total = p ? p.mainCount + p.possibleCount : 0;
 
-    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, mode, p?.hidden, total > 0, openNow?.path, scan?.failed ?? 0]);
+    const headKey = JSON.stringify([s.lang, t?.sig, t?.sameTitle, mode, p?.hidden, total > 0, openNow?.path, scan?.failed ?? 0, this.plugin.undo.size > 0]);
     const bodyKey = JSON.stringify([s.lang, t?.sig, this.scanSerial, scan?.version, st.possible, st.quotes, st.firstMentionOnly, this.uiVersion, mode]);
     // المؤشر مضغوط داخل اللوحة: يؤجَّل البناء حتى يُرفع، كي تصل النقرة إلى العنصر الذي ضُغط
     const focus = this.focusKey();
@@ -524,6 +533,8 @@ export class MentionsView extends ItemView {
       if (Platform.isMobile && mode === "done" && file) this.iconButton(buttons, "timer", s.t("measureCommand"), () => void showMeasurement(this.plugin, file), "st:measure");
       this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
     }
+    // التراجع بنقرة واحدة: لوحة الأوامر صعبة على الجوال
+    if (this.plugin.undo.size) this.iconButton(buttons, "undo-2", s.t("undoCommand"), () => void this.plugin.undoLastLink(), "st:undo");
     if (p.hidden) {
       const h = this.topEl.createDiv("wasl-hidden");
       h.createSpan({ text: s.t("hiddenBySettings", { n: p.hidden }) });
@@ -845,6 +856,7 @@ export class MentionsView extends ItemView {
     this.preview = null;
     if (outcome.ok) {
       this.linked.add(source + "\u0000" + m.start);
+      this.plugin.undo.push({ path: source, start: outcome.start, surface: m.surface, link, at: Date.now() });
     } else {
       const why: Record<WriteFailure, Parameters<typeof s.t>[0]> = { changed: "linkChanged", ambiguous: "linkAmbiguous", protected: "linkProtected", missing: "sourceGone" };
       new Notice(s.t(why[outcome.reason]));

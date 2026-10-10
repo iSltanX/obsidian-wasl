@@ -1,6 +1,7 @@
 import { getLinkpath, MarkdownView, type App, type Editor, type TFile } from "obsidian";
 import type { Found } from "./context";
 import { escapeForTable, fullPathLink, linkFormat, linkTargetPath } from "./link";
+import { revertLink, type LinkRecord } from "./undo";
 import { applyLink, locatorOf, type LocateFailure } from "./write";
 
 /**
@@ -61,6 +62,36 @@ export async function writeLink(app: App, sourcePath: string, m: Found, link: st
       }
       outcome = { ok: true, start: r.start, viaEditor: false };
       return r.text;
+    });
+  } catch (e) {
+    if (e !== CANCEL) throw e;
+  }
+  return outcome;
+}
+
+export type UndoOutcome = { readonly ok: true } | { readonly ok: false; readonly reason: "changed" | "ambiguous" | "missing" };
+
+/** يتراجع عن ربط مسجّل بعد التحقق أن الرابط ما زال كما كُتب (undo.ts)؛ عبر المحرر إن كان الملف مفتوحًا. */
+export async function undoLink(app: App, r: LinkRecord): Promise<UndoOutcome> {
+  const file = app.vault.getFileByPath(r.path);
+  if (!file) return { ok: false, reason: "missing" };
+  const editor = sourceEditor(app, r.path);
+  if (editor) {
+    const v = revertLink(editor.getValue(), r);
+    if (!v.ok) return v;
+    editor.transaction({ changes: [{ from: editor.offsetToPos(v.start), to: editor.offsetToPos(v.end), text: r.surface }] });
+    return { ok: true };
+  }
+  let outcome: UndoOutcome = { ok: false, reason: "changed" };
+  try {
+    await app.vault.process(file, (data) => {
+      const v = revertLink(data, r);
+      if (!v.ok) {
+        outcome = v;
+        throw CANCEL;
+      }
+      outcome = { ok: true };
+      return v.text;
     });
   } catch (e) {
     if (e !== CANCEL) throw e;
