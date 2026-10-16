@@ -68,7 +68,7 @@ Wasl doesn't promise to find every mention. These are its limits:
 
 On Arabic test sentences locked before measuring, so the rules weren't changed afterwards, **83 of 84 suggestions were correct**. On real Arabic novel text with concept titles, Wasl was estimated to catch about **41%** of the correct mentions that Obsidian's built-in feature misses. Details are in [`docs/experiments/`](docs/experiments/) (Arabic).
 
-Accuracy in daily use has not been measured in numbers. The project's author used it for a week on an iPhone and was happy with it, but that is an impression, not a measurement.
+Accuracy in daily use has not been measured in numbers. I used it for a week on an iPhone and I'm happy with it, but that is an impression, not a measurement.
 
 ## Note options
 
