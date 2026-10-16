@@ -66,9 +66,9 @@ Wasl doesn't promise to find every mention. These are its limits:
 
 ### What was measured, and what wasn't
 
-On 84 synthetic Arabic test cases locked before measuring (some of them cases where nothing should be suggested), Wasl's output matched the accepted expectation in **83 cases**. On the novel-style sentences among them, layer 1 dropped to 90.9%, below our 95% bar, because of the optional indefinite matching. That does not mean 98% of its suggestions are correct in your notes.
+On 84 synthetic Arabic test cases locked before measuring (some of them cases where nothing should be suggested), Wasl's output matched the accepted expectation in **83 cases**. On the novel-style sentences among them, layer 1 dropped to 90.9%, below our 95% bar, because of the optional indefinite matching. That does not mean 98% of its suggestions are correct in your notes. You can rerun this measurement with `npm run metrics`.
 
-In one experiment on a single Arabic novel with placeholder concept titles, what Wasl adds came to about **41%** of all the correct mentions (those Obsidian's built-in feature finds plus those Wasl adds). It is a first estimate that predates Wasl's current matching core. Details are in [`docs/experiments/`](docs/experiments/) (Arabic).
+In one experiment on a single Arabic novel with placeholder concept titles, what Wasl adds came to about **41%** of all the correct mentions (those Obsidian's built-in feature finds plus those Wasl adds). It is a first estimate that predates Wasl's current matching core. That experiment used a private text, so it cannot be reproduced from this repository.
 
 Accuracy in daily use has not been measured in numbers. I used it for a week on an iPhone and I'm happy with it, but that is an impression, not a measurement.
 
@@ -106,7 +106,7 @@ In the plugin's settings file on your device it keeps three things: your setting
 
 ## Installation
 
-Wasl has been submitted to Obsidian's community plugin directory but cannot be installed from inside the app yet. Until then, install it manually:
+Search for “Wasl” under **Settings → Community plugins → Browse**. If it doesn't show up yet, install it manually:
 
 1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/iSltanX/obsidian-wasl/releases).
 2. Create a folder named `wasl` inside `.obsidian/plugins/` in your vault and put the three files in it.
@@ -121,8 +121,6 @@ npm install
 npm test
 npm run build
 ```
-
-`npm run dev` rebuilds on save. Code rules are in [`CONTRIBUTING.md`](CONTRIBUTING.md) (Arabic). The execution plan is in [`PLAN.md`](PLAN.md) and the feasibility study in [`docs/study.md`](docs/study.md), both in Arabic.
 
 ## License
 
@@ -206,9 +204,9 @@ npm run build
 
 #### ما قيس وما لم يُقَس
 
-على ٨٤ حالة اختبار عربية اصطناعية قُفلت قبل القياس (منها حالات يجب ألا يُقترح فيها شيء)، وافق ناتج وصل التوقع المقبول في **٨٣ حالة**. وفي مجموعة جمل الرواية منها نزلت دقة الطبقة ١ إلى ٩٠٫٩٪، دون عتبتنا ٩٥٪، بسبب النكرة الاختيارية. وهذا لا يعني أن ٩٨٪ من اقتراحاتها صحيحة في ملاحظاتك.
+على ٨٤ حالة اختبار عربية اصطناعية قُفلت قبل القياس (منها حالات يجب ألا يُقترح فيها شيء)، وافق ناتج وصل التوقع المقبول في **٨٣ حالة**. وفي مجموعة جمل الرواية منها نزلت دقة الطبقة ١ إلى ٩٠٫٩٪، دون عتبتنا ٩٥٪، بسبب النكرة الاختيارية. وهذا لا يعني أن ٩٨٪ من اقتراحاتها صحيحة في ملاحظاتك. ويمكنك إعادة هذا القياس بالأمر `npm run metrics`.
 
-وفي تجربة على نص رواية عربية واحدة بعناوين مفاهيم افتراضية، كانت المواضع التي تضيفها وصل نحو **٤١٪** من مجموع المواضع الصحيحة (ما تجده الميزة المدمجة في Obsidian مضافًا إليه ما تضيفه وصل). تقدير أولي سبق نواة وصل بصيغتها الحالية. والتفاصيل في [`docs/experiments/`](docs/experiments/).
+وفي تجربة على نص رواية عربية واحدة بعناوين مفاهيم افتراضية، كانت المواضع التي تضيفها وصل نحو **٤١٪** من مجموع المواضع الصحيحة (ما تجده الميزة المدمجة في Obsidian مضافًا إليه ما تضيفه وصل). تقدير أولي سبق نواة وصل بصيغتها الحالية. واستُعمل فيها نص خاص، فلا يمكن إعادة هذه التجربة من هذا المستودع.
 
 لم تُقَس دقتها بأرقام في الاستعمال اليومي. استعملتُها أسبوعًا على iPhone وأنا راضٍ عنها، لكن هذا انطباع لا قياس.
 
@@ -246,7 +244,7 @@ npm run build
 
 ### التثبيت
 
-قُدّمت وصل إلى دليل إضافات Obsidian ولم تصر قابلة للتثبيت من داخل التطبيق بعد. إلى ذلك الحين ثبّتها يدويًا:
+ابحث عن «Wasl» في **الإعدادات ← الإضافات المجتمعية ← تصفّح**. وإن لم تظهر بعد فثبّتها يدويًا:
 
 1. نزّل `main.js` و`manifest.json` و`styles.css` من [آخر إصدار](https://github.com/iSltanX/obsidian-wasl/releases).
 2. أنشئ مجلدًا باسم `wasl` داخل `.obsidian/plugins/` في مجلد ملاحظاتك، وضع الملفات الثلاثة فيه.
@@ -261,8 +259,6 @@ npm install
 npm test
 npm run build
 ```
-
-`npm run dev` يبني عند كل حفظ. قواعد الكود والاختبارات في [`CONTRIBUTING.md`](CONTRIBUTING.md). وخطة التنفيذ في [`PLAN.md`](PLAN.md)، ودراسة الجدوى في [`docs/study.md`](docs/study.md).
 
 ### الرخصة
 

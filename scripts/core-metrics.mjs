@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// قياس نواة المطابقة على مجموعات المثبتات المقفلة (الخطوة ١.٦).
+// قياس نواة المطابقة على مجموعات الأمثلة المقفلة.
 //
 //   npm run metrics                      → heldout.json و heldout-novel-style.json
 //   node scripts/core-metrics.mjs dev    → أي مجموعة بالاسم (بلا .json)
 //
 // يطبع تقريرًا بصيغة Markdown: دقة واسترجاع كل طبقة، ثم الأمثلة التي أخطأت فيها النواة.
-// لا يكتب شيئًا؛ النتيجة تُنقل يدويًا إلى docs/experiments/core-metrics.md مع تاريخها.
+// لا يكتب شيئًا: يطبع التقرير إلى الشاشة.
 
 import { build } from "esbuild";
 import { readFileSync } from "node:fs";

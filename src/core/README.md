@@ -2,7 +2,7 @@
 
 # نواة المطابقة
 
-مكتبة TypeScript نقية مستقلة عن Obsidian، تطبّق القسم ٣ والخوارزمية (ب) من [الدراسة](../../docs/study.md). بُنيت في المرحلة ١ وقِيست في [`docs/experiments/core-metrics.md`](../../docs/experiments/core-metrics.md).
+مكتبة TypeScript نقية مستقلة عن Obsidian. تُقاس على مجموعتي الاختبار المقفلتين بالأمر `npm run metrics`.
 
 قواعد هذا المجلد يفرضها `test/mobile-safety.test.ts`:
 
