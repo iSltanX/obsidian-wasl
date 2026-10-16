@@ -36,7 +36,7 @@ export function sourceEditor(app: App, path: string): Editor | null {
   return null;
 }
 
-const CANCEL = Symbol("wasl-cancel");
+const CANCEL = new Error("wasl-cancel");
 
 /**
  * يكتب الرابط مكان الموضع بعد التحقق (write.ts): في المحرر إن كان الملف مفتوحًا في وضع المصدر،

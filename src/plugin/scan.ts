@@ -245,7 +245,7 @@ export class Scan {
   private async loop(onProgress: (scan: Scan) => void): Promise<ScanState> {
     const budget = this.opts.budgetMs ?? 12;
     const now = this.opts.now ?? (() => Date.now());
-    const pause = this.opts.pause ?? (() => new Promise<void>((r) => setTimeout(r, 8)));
+    const pause = this.opts.pause ?? (() => new Promise<void>((r) => window.setTimeout(r, 8)));
     const sources = this.host
       .sources()
       .filter((s) => s.path !== this.target.note.path)

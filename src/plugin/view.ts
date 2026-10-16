@@ -844,7 +844,7 @@ export class MentionsView extends ItemView {
     row(s.t("previewBefore"), sn.text, sn.matchStart, sn.matchEnd, "wasl-match");
     row(s.t("previewAfter"), after.text, after.linkStart, after.linkEnd, "wasl-match wasl-link-text");
     const actions = box.createDiv("wasl-preview-actions");
-    const confirm = this.textButton(actions, s.t("confirmLink"), () => this.confirmLink(source, m, link), k("confirm"));
+    const confirm = this.textButton(actions, s.t("confirmLink"), () => void this.confirmLink(source, m, link), k("confirm"));
     confirm.addClass("mod-cta");
     this.textButton(actions, s.t("cancel"), () => this.cancelPreview(m), k("cancel"));
     box.onkeydown = (e) => {
