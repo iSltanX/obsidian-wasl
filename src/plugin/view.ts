@@ -4,7 +4,6 @@ import {
   MarkdownView,
   Menu,
   Notice,
-  Platform,
   setIcon,
   TFile,
   type TAbstractFile,
@@ -18,7 +17,6 @@ import { fingerprint, formKey } from "./ignore";
 import { tagOf } from "./stats";
 import { escapeForTable, previewAfter } from "./link";
 import { generateLink, plainLink, writeLink, type WriteFailure } from "./linker";
-import { showMeasurement } from "./measure";
 import { makeTarget, Scan, type Target } from "./scan";
 import { isExcluded } from "./settings";
 import { noteInput, noteRefs, vaultHost } from "./vault";
@@ -73,8 +71,6 @@ export class MentionsView extends ItemView {
   private pointerDownAt = 0;
   private statusEl: HTMLElement | null = null;
   private progressEl: HTMLElement | null = null;
-  /** زمن آخر رسم كامل للوحة وهدفه؛ يقرؤه أمر القياس (ت٣). */
-  lastRenderMs = 0;
   get targetPath(): string | null {
     return this.target?.note.path ?? null;
   }
@@ -464,12 +460,7 @@ export class MentionsView extends ItemView {
       this.renderTimer = null;
     }
     this.lastRender = Date.now();
-    const t0 = performance.now();
-    try {
-      this.draw();
-    } finally {
-      this.lastRenderMs = performance.now() - t0;
-    }
+    this.draw();
   }
 
   /**
@@ -533,9 +524,6 @@ export class MentionsView extends ItemView {
       this.textButton(buttons, s.t("resume"), () => void this.runScan(), "st:resume");
       this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
     } else {
-      // زر القياس على الجوال (ت٣): لوحة الأوامر صعبة الوصول هناك. مؤقت، يُزال مع الأمر قبل 1.0.0
-      const file = this.app.vault.getFileByPath(t.note.path);
-      if (Platform.isMobile && mode === "done" && file) this.iconButton(buttons, "timer", s.t("measureCommand"), () => void showMeasurement(this.plugin, file), "st:measure");
       this.iconButton(buttons, "refresh-cw", s.t("rescan"), () => this.rescan(), "st:rescan");
     }
     // التراجع بنقرة واحدة: لوحة الأوامر صعبة على الجوال

@@ -2,7 +2,6 @@ import { moment, normalizePath, Notice, Plugin, TFile, type TAbstractFile } from
 import { resolveLang, strings, type Strings } from "./i18n";
 import { IgnoreList } from "./ignore";
 import { undoLink } from "./linker";
-import { showMeasurement } from "./measure";
 import { basename } from "./present";
 import { ResultCache } from "./scan";
 import { localDay, Stats, type Outcome, type Tag } from "./stats";
@@ -37,16 +36,6 @@ export default class WaslPlugin extends Plugin {
     this.registerView(VIEW_TYPE, (leaf) => new MentionsView(leaf, this));
     // أسماء الأوامر بلا اسم الإضافة: Obsidian يضيفه (إرشادات الإضافات)
     this.addCommand({ id: "show-unlinked-mentions", name: this.s.t("commandShow"), callback: () => void this.activateView() });
-    this.addCommand({
-      id: "measure-search-time",
-      name: this.s.t("measureCommand"),
-      checkCallback: (checking) => {
-        const file = this.app.workspace.getActiveFile();
-        if (!file || file.extension !== "md") return false;
-        if (!checking) void showMeasurement(this, file);
-        return true;
-      },
-    });
     this.addCommand({
       id: "undo-last-link",
       name: this.s.t("undoCommand"),
