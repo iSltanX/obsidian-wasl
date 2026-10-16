@@ -3,7 +3,7 @@
   "name": "Wasl",
   "version": "0.1.2",
   "minAppVersion": "1.7.2",
-  "description": "Arabic-aware unlinked mentions: finds «وبالكتابةِ» for «الكتابة», shows why, and links only with your approval.",
+  "description": "Finds places in your notes where you mention another note by title without linking it, even when Arabic spelling hides it («وبالكتابةِ» for «الكتابة»), and links them only when you approve.",
   "author": "Sultan Al-Anzi",
   "authorUrl": "https://github.com/iSltanX",
   "isDesktopOnly": false
