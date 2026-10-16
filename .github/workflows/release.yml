@@ -1,6 +1,10 @@
 name: Release Obsidian plugin
 
-# الإصدارات تُبنى محليًا وتُرفع بـ gh release create. هذا السير يدوي فقط حتى تعمل Actions.
+# يبني الإصدار على GitHub ويوثّق مصدر ملفاته بشهادة (artifact attestation)، ثم ينشئ مسودة إصدار
+# بالنسخة المكتوبة في manifest.json وملاحظاتها من CHANGELOG.md. تُنشر المسودة بعد التحقق منها:
+#   gh workflow run release.yml --ref main
+#   gh release edit <النسخة> --draft=false
+# الفحوص اليومية تبقى محلية (npm run check وخطّاف pre-push).
 on:
   workflow_dispatch:
 
@@ -9,6 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7.0.0
@@ -18,13 +24,23 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v4.2.2
+        with:
+          subject-path: |
+            main.js
+            manifest.json
+            styles.css
       - name: Create draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag=$(jq -r .version manifest.json)
+          awk -v v="$tag" '$0 ~ "^## " v " " {f=1; next} /^## / && f {exit} f' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "no CHANGELOG entry for $tag" >&2; exit 1; }
           gh release create "$tag" \
-            --title="$tag" \
-            --generate-notes \
+            --title="Wasl $tag" \
+            --notes-file notes.md \
+            --target "$GITHUB_SHA" \
             --draft \
             main.js manifest.json styles.css

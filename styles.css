@@ -14,8 +14,26 @@
 .wasl-view .wasl-section-head,
 .wasl-view .wasl-group-name,
 .wasl-view .wasl-link-button {
-  all: unset;
+  appearance: none;
   box-sizing: border-box;
+  display: inline;
+  position: static;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  outline: 0;
+  background: none;
+  box-shadow: none;
+  height: auto;
+  min-height: 0;
+  line-height: inherit;
+  text-align: inherit;
+  white-space: inherit;
+  transition: none;
+  align-items: normal;
+  justify-content: normal;
+  gap: normal;
   cursor: var(--cursor);
   font: inherit;
   color: inherit;
@@ -30,8 +48,10 @@
   position: absolute;
   inline-size: 1px;
   block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
-  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -270,8 +290,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  column-gap: var(--size-4-2);
-  row-gap: var(--size-4-1);
+  gap: var(--size-4-1) var(--size-4-2);
   margin-block: var(--size-4-1);
   margin-inline-start: calc(var(--size-4-4) + var(--size-4-1));
   padding: var(--size-4-2);
