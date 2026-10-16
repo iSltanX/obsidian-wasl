@@ -1,7 +1,7 @@
 {
   "id": "wasl",
   "name": "Wasl",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "minAppVersion": "1.7.2",
   "description": "Finds places in your notes where you mention another note by title without linking it, even when Arabic spelling hides it («وبالكتابةِ» for «الكتابة»), and links them only when you approve.",
   "author": "Sultan Al-Anzi",
