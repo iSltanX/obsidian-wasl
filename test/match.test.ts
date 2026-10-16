@@ -179,3 +179,48 @@ describe("الأعلام والسياق", () => {
     expect(doc.slice(m.start, m.end)).toBe("وبالكتابةِ");
   });
 });
+
+describe("مربوطة من قبل: هوية الملف لا اسمه", () => {
+  const idx = buildIndex([note("المعنى", { path: "أ/المعنى.md" }), note("المعنى", { path: "ب/المعنى.md" })]);
+  const flags = (doc: string, resolveLink?: (t: string) => string | null): Record<string, string[]> => {
+    const ms = findMentions(doc, idx, { sourcePath: "مصدر.md", resolveLink });
+    return Object.fromEntries(ms.map((x) => [x.path, [...x.flags]]));
+  };
+
+  it("رابط إلى إحدى الملاحظتين لا يجعل الأخرى بالاسم نفسه مربوطة", () => {
+    const f = flags("[[أ/المعنى]] ثم المعنى هنا", (t) => (t === "أ/المعنى" ? "أ/المعنى.md" : null));
+    expect(f["أ/المعنى.md"]).toContain("already-linked");
+    expect(f["ب/المعنى.md"]).not.toContain("already-linked");
+  });
+
+  it("رابط بالاسم وحده يُنسب إلى الملف الذي يحلّه Obsidian إليه", () => {
+    const f = flags("[[المعنى]] ثم المعنى هنا", () => "ب/المعنى.md");
+    expect(f["ب/المعنى.md"]).toContain("already-linked");
+    expect(f["أ/المعنى.md"]).not.toContain("already-linked");
+  });
+
+  it("رابط لا يصل إلى ملف لا يُعدّ ربطًا، ولو طابق اسمًا بديلًا للهدف", () => {
+    const t = note("الكتابة", { aliases: ["writing"] });
+    const ms = findMentions("[[writing]] ثم الكتابة", buildIndex([t]), { resolveLink: () => null });
+    expect(ms).toHaveLength(1);
+    expect(ms[0]?.flags).not.toContain("already-linked");
+  });
+
+  it("بلا محلّل يبقى الحكم بالاسم وحده", () => {
+    const f = flags("[[أ/المعنى]] ثم المعنى هنا");
+    expect(f["أ/المعنى.md"]).toContain("already-linked");
+    expect(f["ب/المعنى.md"]).toContain("already-linked");
+  });
+
+  it("المحلّل يستلم الوجهة بمجلدها وبلا قسم، من روابط الجسم بلا بيانات Obsidian أيضًا", () => {
+    const seen: string[] = [];
+    const doc = "[[أ/المعنى#قسم|نص]] و[x](%D8%A8/%D8%A7%D9%84%D9%85%D8%B9%D9%86%D9%89.md) ثم المعنى هنا";
+    const f = flags(doc, (t) => {
+      seen.push(t);
+      return t.endsWith(".md") ? t : t + ".md";
+    });
+    expect(seen.sort()).toEqual(["أ/المعنى", "ب/المعنى.md"]);
+    expect(f["أ/المعنى.md"]).toContain("already-linked");
+    expect(f["ب/المعنى.md"]).toContain("already-linked");
+  });
+});

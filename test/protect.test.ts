@@ -93,6 +93,14 @@ describe("النطاقات المحمية (الماسح)", () => {
     expect(protect("```\n[[الكتابة]]\n```").links.has("الكتابة")).toBe(false);
   });
 
+  it("يحفظ وجهات الروابط كما كُتبت: بمجلدها وامتدادها وبلا قسم، ويتجاهل الروابط الداخلية والخارجية", () => {
+    const body = protect("[[أ/المعنى#قسم|نص]] و[x](%D8%A8/%D8%A7%D9%84%D9%85%D8%B9%D9%86%D9%89.md) و[[#داخلي]] و[y](https://a.b)");
+    expect(body.targets).toEqual(new Set(["أ/المعنى", "ب/المعنى.md"]));
+    const pos = (offset: number) => ({ start: { line: 0, col: 0, offset }, end: { line: 0, col: 0, offset: offset + 1 } });
+    const fromCache = protect("نص", { links: [{ link: "أ/المعنى#h", position: pos(0) }], embeds: [{ link: "صورة.png", position: pos(1) }] });
+    expect(fromCache.targets).toEqual(new Set(["أ/المعنى", "صورة.png"]));
+  });
+
   it("مفاتيح الروابط بصيغة الجداول ومعرّفات الكتل", () => {
     const p = protect("| [[الكتابة\\|وبالكتابةِ]] | [[الجسد^blk]] |");
     expect(p.links).toEqual(new Set(["الكتابة", "الجسد"]));

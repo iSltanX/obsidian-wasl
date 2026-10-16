@@ -81,6 +81,13 @@ export interface MatchOptions {
   readonly sourcePath?: string;
   /** بيانات Obsidian للملاحظة إن توفرت. */
   readonly cache?: CacheLike;
+  /**
+   * يحلّ وجهة رابط (كما كُتبت، بمجلدها) إلى مسار الملف الذي يصل إليه من هذه الملاحظة، أو `null` إن
+   * لم يصل إلى ملف. به يُحكم «مربوطة في هذه الملاحظة» بهوية الملف لا باسمه: رابط إلى `أ/المعنى` لا يُعدّ
+   * رابطًا إلى `ب/المعنى`، و`[[writing]]` غير المحلول لا يُعدّ رابطًا إلى ملاحظة اسمها البديل writing.
+   * بدونه (النواة وحدها، أو الأدوات خارج Obsidian) يُقارَن اسم الملف ولو اختلف مجلده.
+   */
+  readonly resolveLink?: (target: string) => string | null | undefined;
 }
 
 interface Chain {
@@ -273,6 +280,16 @@ function better(a: Mention, b: Mention): boolean {
   return a.reasons.length < b.reasons.length;
 }
 
+/** مسارات الملفات التي تصل إليها وجهات الروابط الموجودة؛ ما لم يصل إلى ملف يُهمل. */
+function resolvedPaths(targets: ReadonlySet<string>, resolve: (target: string) => string | null | undefined): ReadonlySet<string> {
+  const paths = new Set<string>();
+  for (const t of targets) {
+    const p = resolve(t);
+    if (p) paths.add(p);
+  }
+  return paths;
+}
+
 /**
  * يبحث في ملاحظة عن مواضع أسماء الفهرس. النتائج مرتبة بالموضع، وفي كل كلمة أفضل مطابقة
  * واحدة لكل ملاحظة هدف (الطبقة الأدنى، ثم العنوان قبل الاسم البديل).
@@ -280,6 +297,7 @@ function better(a: Mention, b: Mention): boolean {
 export function findMentions(doc: string, index: TitleIndex, opts: MatchOptions = {}): Mention[] {
   if (!index.size) return [];
   const prot = protect(doc, opts.cache);
+  const linkedPaths = opts.resolveLink ? resolvedPaths(prot.targets, opts.resolveLink) : null;
   const n = normalize(mask(doc, prot.protected));
   const tokens = tokenize(n.text);
   const best = new Map<string, Mention>();
@@ -326,11 +344,15 @@ export function findMentions(doc: string, index: TitleIndex, opts: MatchOptions 
       if (!reasons.length) reasons.push({ code: "exact" });
       if (inRanges(prot.quotes, start)) flags.push("quote");
       if (inRanges(prot.tables, start)) flags.push("table");
-      const keys = index.keysByPath.get(entry.note.path);
-      if (keys) {
-        let linked = false;
-        for (const k of keys) if (prot.links.has(k)) linked = true;
-        if (linked) flags.push("already-linked");
+      if (linkedPaths) {
+        if (linkedPaths.has(entry.note.path)) flags.push("already-linked");
+      } else {
+        const keys = index.keysByPath.get(entry.note.path);
+        if (keys) {
+          let linked = false;
+          for (const k of keys) if (prot.links.has(k)) linked = true;
+          if (linked) flags.push("already-linked");
+        }
       }
       if (index.ambiguousTitles.has(index.titleKeyByPath.get(entry.note.path) ?? "")) flags.push("ambiguous-target");
 

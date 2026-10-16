@@ -46,6 +46,11 @@ export interface Protection {
   readonly tables: readonly Range[];
   /** مفاتيح وجهات الروابط الموجودة في الملاحظة (اسم الملف بلا امتداد، مطبّعًا). */
   readonly links: ReadonlySet<string>;
+  /**
+   * وجهات الروابط الموجودة كما كُتبت: بمجلدها وامتدادها، بلا قسم ولا معرّف كتلة. تُحلّ إلى ملفات
+   * بمسار الملف لا باسمه (`MatchOptions.resolveLink`)، فرابط إلى `أ/المعنى` لا يُعدّ رابطًا إلى `ب/المعنى`.
+   */
+  readonly targets: ReadonlySet<string>;
 }
 
 /** محرف التعمية: ليس حرف كلمة ولا مسافة ولا حركة، فيفصل الكلمات ولا يصلها. */
@@ -55,6 +60,11 @@ const QUOTE_SECTIONS = new Set(["blockquote", "callout"]);
 const PROTECTED_SECTIONS = new Set(["code", "yaml", "math", "comment", "html", "heading"]);
 
 /** مفتاح وجهة رابط: اسم الملف بلا مجلد ولا امتداد ولا قسم ولا معرّف كتلة. */
+/** وجهة رابط كما كُتبت بلا قسم ولا معرّف كتلة (`مجلد/ملاحظة#قسم` ← `مجلد/ملاحظة`). */
+export function linkTarget(target: string): string {
+  return (target.split(/[#^]/)[0] as string).trim();
+}
+
 export function linkKey(target: string): string {
   const noSub = target.split(/[#^]/)[0] as string;
   const base = noSub.split("/").pop() as string;
@@ -132,10 +142,11 @@ export function scanBrackets(text: string): Range[] {
 }
 
 /** يستخرج وجهة رابط واحد («[[هدف|نص]]» أو «[نص](هدف.md)») ويضيف مفتاحها. */
-function addLinkTarget(links: Set<string>, link: string): void {
+function addLinkTarget(links: Set<string>, targets: Set<string>, link: string): void {
   const wiki = /^!?\[\[([^\]|#^\\]+)/.exec(link);
   if (wiki) {
     links.add(linkKey(wiki[1] as string));
+    addTarget(targets, wiki[1] as string);
     return;
   }
   const md = /\]\(([^)\s#]+)/.exec(link);
@@ -149,6 +160,12 @@ function addLinkTarget(links: Set<string>, link: string): void {
     /* يبقى كما هو */
   }
   links.add(linkKey(target));
+  addTarget(targets, target);
+}
+
+function addTarget(targets: Set<string>, target: string): void {
+  const t = linkTarget(target);
+  if (t) targets.add(t);
 }
 
 /** مسح خطي لزوج فاتح/قافل قد يمتد أسطرًا («<!--»/«-->»، «%%»، «$$»): إن لم يوجد قافل بعد فاتح فلن يوجد لما بعده. */
@@ -171,6 +188,7 @@ export function protect(doc: string, cache?: CacheLike): Protection {
   const quotes: Range[] = [];
   const tables: Range[] = [];
   const links = new Set<string>();
+  const targets = new Set<string>();
 
   // ١. من البيانات المرسلة
   if (cache) {
@@ -179,10 +197,12 @@ export function protect(doc: string, cache?: CacheLike): Protection {
     for (const l of cache.links ?? []) {
       ranges.push(pos(l.position));
       links.add(linkKey(l.link));
+      addTarget(targets, l.link);
     }
     for (const e of cache.embeds ?? []) {
       ranges.push(pos(e.position));
       links.add(linkKey(e.link));
+      addTarget(targets, e.link);
     }
     for (const h of cache.headings ?? []) ranges.push(pos(h.position));
     for (const f of cache.footnotes ?? []) ranges.push(pos(f.position));
@@ -239,7 +259,7 @@ export function protect(doc: string, cache?: CacheLike): Protection {
       // الروابط: نطاقاتها محمية، ووجهاتها تُجمع هنا (خارج الكتل والكود المضمّن، فرابط داخل كود ليس ربطًا)
       for (const r of scanBrackets(work)) {
         found.push(r);
-        addLinkTarget(links, work.slice(r.start, r.end));
+        addLinkTarget(links, targets, work.slice(r.start, r.end));
       }
     }
     for (const re of stage) {
@@ -257,7 +277,7 @@ export function protect(doc: string, cache?: CacheLike): Protection {
     work = mask(work, found);
   }
 
-  return { protected: ranges, quotes, tables, links };
+  return { protected: ranges, quotes, tables, links, targets };
 }
 
 /** هل يقع الموضع داخل أحد النطاقات؟ */

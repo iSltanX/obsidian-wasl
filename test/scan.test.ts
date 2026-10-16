@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeTarget, ResultCache, Scan, type ScanHost, type SourceRef } from "../src/plugin/scan";
+import { makeTarget, ResultCache, Scan, sharesNames, type ScanHost, type SourceRef } from "../src/plugin/scan";
 
 function host(files: Record<string, string>, mtimes: Record<string, number> = {}, fail: string[] = []) {
   const reads: string[] = [];
@@ -277,5 +277,55 @@ describe("Scan version", () => {
     expect(scan.version).toBe(1);
     scan.forget("ب.md");
     expect(scan.version).toBe(2);
+  });
+});
+
+describe("link identity in scans", () => {
+  const dup = makeTarget({ path: "ب/المعنى.md", title: "المعنى" }, [
+    { path: "أ/المعنى.md", title: "المعنى" },
+    { path: "ب/المعنى.md", title: "المعنى" },
+  ]);
+
+  it("asks the host to resolve each link from the file it was written in", async () => {
+    const asked: [string, string][] = [];
+    const { h } = host({ "مصدر.md": "[[أ/المعنى]] ثم المعنى هنا" });
+    h.resolveLink = (link, source) => {
+      asked.push([link, source]);
+      return link === "أ/المعنى" ? "أ/المعنى.md" : null;
+    };
+    const scan = new Scan(dup, h, new ResultCache(), instant);
+    await scan.run(() => {});
+    expect(asked).toEqual([["أ/المعنى", "مصدر.md"]]);
+    const items = scan.results.get("مصدر.md")?.items ?? [];
+    expect(items).toHaveLength(1);
+    expect(items[0]?.flags).not.toContain("already-linked");
+  });
+
+  it("marks the mention linked when the link resolves to the target itself", async () => {
+    const { h } = host({ "مصدر.md": "[[ب/المعنى]] ثم المعنى هنا" });
+    h.resolveLink = () => "ب/المعنى.md";
+    const scan = new Scan(dup, h, new ResultCache(), instant);
+    await scan.run(() => {});
+    expect(scan.results.get("مصدر.md")?.items[0]?.flags).toContain("already-linked");
+  });
+});
+
+describe("sharesNames", () => {
+  const t = makeTarget({ path: "الفينومينولوجيا.md", title: "الفينومينولوجيا", aliases: ["الظاهراتية"] }, [
+    { path: "الفينومينولوجيا.md", title: "الفينومينولوجيا" },
+    { path: "هوسرل.md", title: "هوسرل", aliases: ["الظاهراتية"] },
+  ]);
+
+  it("is true when another note now carries one of the target's names", () => {
+    expect(sharesNames(t, { path: "ج.md", title: "ج", aliases: ["الظّاهراتية"] })).toBe(true);
+    expect(sharesNames(t, { path: "الظاهراتية.md", title: "الظاهراتية" })).toBe(true);
+  });
+
+  it("is true for a note that shared a name before, since it may have just dropped it", () => {
+    expect(sharesNames(t, { path: "هوسرل.md", title: "هوسرل" })).toBe(true);
+  });
+
+  it("is false for an unrelated note and ignores empty names", () => {
+    expect(sharesNames(t, { path: "د.md", title: "د", aliases: ["شيء آخر", ""] })).toBe(false);
   });
 });

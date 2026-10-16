@@ -17,9 +17,9 @@ import { fingerprint, formKey } from "./ignore";
 import { tagOf } from "./stats";
 import { escapeForTable, previewAfter } from "./link";
 import { generateLink, plainLink, writeLink, type WriteFailure } from "./linker";
-import { makeTarget, Scan, type Target } from "./scan";
+import { makeTarget, Scan, sharesNames, type Target } from "./scan";
 import { isExcluded } from "./settings";
-import { noteInput, noteRefs, vaultHost } from "./vault";
+import { noteInput, noteRef, noteRefs, vaultHost } from "./vault";
 
 export const VIEW_TYPE = "wasl-mentions";
 
@@ -332,6 +332,9 @@ export class MentionsView extends ItemView {
       this.recheckTarget(); // الأسماء البديلة أو خاصية wasl
       return;
     }
+    // أسماء بديلة أُضيفت أو حُذفت في ملاحظة أخرى: تنبيه «الاسم المشترك» يتبعها. إعادة الحساب هنا رخيصة
+    // (البصمة لم تتغير فلا بحث جديد) ولا تجري إلا لملف يمسّ أسماء الهدف.
+    if (sharesNames(this.target, noteRef(this.app, file))) this.recheckTarget();
     this.refreshFile(file);
   }
 

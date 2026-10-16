@@ -66,7 +66,9 @@ Wasl doesn't promise to find every mention. These are its limits:
 
 ### What was measured, and what wasn't
 
-On Arabic test sentences locked before measuring, so the rules weren't changed afterwards, **83 of 84 suggestions were correct**. On real Arabic novel text with concept titles, Wasl was estimated to catch about **41%** of the correct mentions that Obsidian's built-in feature misses. Details are in [`docs/experiments/`](docs/experiments/) (Arabic).
+On 84 synthetic Arabic test cases locked before measuring (some of them cases where nothing should be suggested), Wasl's output matched the accepted expectation in **83 cases**. On the novel-style sentences among them, layer 1 dropped to 90.9%, below our 95% bar, because of the optional indefinite matching. That does not mean 98% of its suggestions are correct in your notes.
+
+In one experiment on a single Arabic novel with placeholder concept titles, what Wasl adds came to about **41%** of all the correct mentions (those Obsidian's built-in feature finds plus those Wasl adds). It is a first estimate that predates Wasl's current matching core. Details are in [`docs/experiments/`](docs/experiments/) (Arabic).
 
 Accuracy in daily use has not been measured in numbers. I used it for a week on an iPhone and I'm happy with it, but that is an impression, not a measurement.
 
@@ -87,7 +89,7 @@ Under **Settings → Wasl**:
 - **Excluded folders:** notes inside them aren't searched. One folder per line.
 - **Possible mentions:** collapsed or hidden.
 - **Mentions inside quotes:** shown with a label, or hidden.
-- **First mention only:** show only the first mention in each note, and nothing from notes that already link the target.
+- **First mention only:** show only the first mention in each note, and nothing from notes that already link the target. "Already link" is decided by the file a link points to, the way Obsidian resolves it, not by the name: a link to `a/Meaning` does not hide mentions for `b/Meaning`.
 - **Interface language:** Arabic or English; automatic follows Obsidian.
 
 If Obsidian's *Automatically update internal links* setting is off, Wasl warns you: Obsidian asks before updating links when you rename or move a note, and renaming outside Obsidian breaks the links Wasl wrote.
@@ -98,7 +100,9 @@ Wasl is written to run on a phone: no Node, no external libraries, and its panel
 
 ## Privacy
 
-Wasl doesn't connect to the internet and sends nothing to anyone. It reads your notes inside Obsidian and writes only what you confirmed. In the plugin's settings file on your device it keeps the list of what you ignored and number-only counters (how many were linked and rejected), with no note names and no text. The command *Export statistics to a note* writes these numbers to a new note if you want to see them.
+Wasl doesn't connect to the internet and never sends your notes to anyone. It reads your notes inside Obsidian and writes only what you confirmed.
+
+In the plugin's settings file on your device it keeps three things: your settings; the list of what you ignored, which includes **note paths**, a normalized copy of each ignored word and a fingerprint of the nearby text; and number-only counters (how many were linked and rejected) with no names and no text. If you use Obsidian Sync, that file may travel with your plugin settings. The command *Export statistics to a note* writes the counters to a new note if you want to see them.
 
 ## Installation
 

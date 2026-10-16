@@ -32,7 +32,7 @@ export interface Target {
 }
 
 /** نسخة قواعد النواة في البصمة: تُرفع حين تتغير القواعد فلا تُعرض نتائج قديمة. */
-const CORE_VERSION = 1;
+const CORE_VERSION = 2;
 
 export function makeTarget(note: NoteInput, notes: readonly NoteRef[]): Target {
   const others = notes.filter((n) => n.path !== note.path);
@@ -79,6 +79,11 @@ export interface ScanHost {
   /** `null`: الملف لم يعد موجودًا (حُذف أو نُقل أثناء البحث)؛ يُتخطى ولا يُعدّ فشلًا. */
   read(path: string): Promise<string | null>;
   metadata(path: string): CacheLike | undefined;
+  /**
+   * الملف الذي يصل إليه رابط مكتوب في `sourcePath` (وجهته كما كُتبت، بمجلدها)، أو `null` إن لم يصل إلى ملف.
+   * به يُحكم «مربوطة من قبل» بهوية الملف لا باسمه. غيابه (الاختبارات) يُبقي المقارنة بالاسم.
+   */
+  resolveLink?(target: string, sourcePath: string): string | null;
 }
 
 export interface FileResult {
@@ -88,8 +93,18 @@ export interface FileResult {
 }
 
 /** مسح ملف واحد: النواة ثم السياق. */
-export function scanText(target: Target, path: string, text: string, meta?: CacheLike): Found[] {
-  return withContext(text, findMentions(text, target.index, { sourcePath: path, cache: meta }));
+export function scanText(target: Target, path: string, text: string, meta?: CacheLike, resolveLink?: (link: string) => string | null): Found[] {
+  return withContext(text, findMentions(text, target.index, { sourcePath: path, cache: meta, resolveLink }));
+}
+
+/**
+ * هل يشارك الهدف ملاحظةً أخرى اسمًا (عنوانًا أو اسمًا بديلًا)؟ تُستعمل حين يتغيّر ملف آخر: إن شارك الهدف
+ * اسمًا قبل التعديل أو بعده فتنبيه «الاسم المشترك» في اللوحة يحتاج إعادة حساب.
+ */
+export function sharesNames(target: Target, other: NoteRef): boolean {
+  if (target.sharedNames.some((s) => s.paths.includes(other.path))) return true; // كان يشاركه وقد يكون زال
+  const mine = new Set([target.note.title, ...(target.note.aliases ?? [])].map(nameKey).filter(Boolean));
+  return [other.title, ...(other.aliases ?? [])].some((n) => mine.has(nameKey(n)));
 }
 
 /**
@@ -292,7 +307,9 @@ export class Scan {
       const text = await this.host.read(src.path);
       if (text === null || this.gone.has(src.path) || this.reads.get(src.path) !== seq) return null;
       this.chars += text.length;
-      result = { path: src.path, mtime: src.mtime, items: scanText(this.target, src.path, text, this.host.metadata(src.path)) };
+      const resolve = this.host.resolveLink?.bind(this.host);
+      const items = scanText(this.target, src.path, text, this.host.metadata(src.path), resolve ? (link) => resolve(link, src.path) : undefined);
+      result = { path: src.path, mtime: src.mtime, items };
     } catch (e) {
       // ملف لا يُقرأ أو نص أفشل النواة: يُعدّ ويُتخطى، والبحث يكمل
       console.warn("Wasl: could not scan", src.path, e);
