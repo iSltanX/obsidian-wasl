@@ -120,7 +120,7 @@
 
 ## التثبيت
 
-ابحث عن «Wasl» في **الإعدادات ← الإضافات المجتمعية ← تصفّح**. وإن لم تظهر بعد فثبّتها يدويًا:
+ابحث عن «Wasl» في **الإعدادات ← الإضافات المجتمعية ← تصفّح**، أو افتح [صفحتها في دليل الإضافات](https://community.obsidian.md/plugins/wasl). ولتثبيتها يدويًا:
 
 1. نزّل `main.js` و`manifest.json` و`styles.css` من [آخر إصدار](https://github.com/iSltanX/obsidian-wasl/releases).
 2. أنشئ مجلدًا باسم `wasl` داخل `.obsidian/plugins/` في مجلد ملاحظاتك، وضع الملفات الثلاثة فيه.
@@ -128,13 +128,15 @@
 
 ## التطوير
 
-يحتاج Node 20 فأحدث.
+يحتاج Node 22.12 فأحدث.
 
 ```bash
 npm install
 npm test
 npm run build
 ```
+
+`npm run check` يجمع فحص الأنواع والاختبارات والبناء، و`npm run dev` يبني عند كل حفظ. وقواعد الكود وطريقة تجربة الإضافة في مجلد الملاحظات التجريبي في [CONTRIBUTING.md](https://github.com/iSltanX/obsidian-wasl/blob/main/CONTRIBUTING.md).
 
 ## الرخصة
 
@@ -248,7 +250,7 @@ In the plugin's settings file on your device it keeps three things: your setting
 
 ### Installation
 
-Search for “Wasl” under **Settings → Community plugins → Browse**. If it doesn't show up yet, install it manually:
+Search for “Wasl” under **Settings → Community plugins → Browse**, or open [its page in the plugin directory](https://community.obsidian.md/plugins/wasl). To install it manually instead:
 
 1. Download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/iSltanX/obsidian-wasl/releases).
 2. Create a folder named `wasl` inside `.obsidian/plugins/` in your vault and put the three files in it.
@@ -256,13 +258,15 @@ Search for “Wasl” under **Settings → Community plugins → Browse**. If it
 
 ### Development
 
-Requires Node 20 or newer.
+Requires Node 22.12 or newer.
 
 ```bash
 npm install
 npm test
 npm run build
 ```
+
+`npm run check` runs the type check, the tests and the build together, and `npm run dev` rebuilds on save. Code rules and how to try the plugin in the test vault are in [CONTRIBUTING.md](https://github.com/iSltanX/obsidian-wasl/blob/main/CONTRIBUTING.md) (Arabic).
 
 ### License
 
