@@ -18,7 +18,7 @@
    ```
    `npm run check` يجمع فحص الأنواع والاختبارات والبناء. و`npm install` يفعّل خطّاف `pre-push` الذي يشغّله قبل كل دفع.
 2. ابنِ الإضافة: `npm run build`، أو `npm run dev` للبناء عند كل حفظ.
-3. افتح `test-vault` في Obsidian كمجلد ملاحظات (Vault)، وانسخ `main.js` و`manifest.json` و`styles.css` إلى `test-vault/.obsidian/plugins/wasl/`.
+3. افتح `test-vault` في Obsidian كمجلد ملاحظات (Vault)، وانسخ `main.js` و`manifest.json` و`styles.css` إلى `test-vault/.obsidian/plugins/wasl/`. وللتجربة الآلية داخل التطبيق: شغّل Obsidian بالخيار `--remote-debugging-port=9222`، ثم `node scripts/cdp.mjs eval "<تعبير>"` أو `node scripts/cdp.mjs shot out.png` (التفاصيل في رأس الملف).
 4. أرفق في طلب الدمج ما جرّبته، ولقطة قبل وبعد إن مسّ التعديل الواجهة.
 5. `README.md` في الجذر (إنجليزي أولًا، وتقرؤه بوابة دليل Obsidian) و`.github/README.md` (عربي أولًا، ويظهر في صفحة المستودع على GitHub) يحملان المحتوى نفسه بترتيبين مختلفين، فعدّلهما معًا.
 
@@ -34,7 +34,7 @@
 ## أمثلة المطابقة
 
 - `test/fixtures/dev.json` مجموعة **الضبط**: تُعدَّل قواعد المطابقة عليها بحرية.
-- `test/fixtures/heldout.json` مجموعة **الاختبار المقفلة**: لا تُعدَّل القواعد بالنظر إليها، ولا يُغيَّر الملف إلا بقرار مكتوب في `docs/decisions/`. بصمته محفوظة ويفحصها اختبار.
+- `test/fixtures/heldout.json` مجموعة **الاختبار المقفلة**: لا تُعدَّل القواعد بالنظر إليها، ولا يُغيَّر الملف إلا بقرار مكتوب يُسجَّل في `test/fixtures/README.md`. بصمته محفوظة ويفحصها اختبار. والأمر `npm run metrics` يعيد قياس النواة على المجموعتين المقفلتين.
 - لا تضع نصوصًا من ملاحظاتك الحقيقية في الأمثلة؛ حوّلها إلى جمل اصطناعية بالبنية نفسها.
 
 ## الرخصة

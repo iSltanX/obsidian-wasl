@@ -1,7 +1,7 @@
 name: CI
 
-# الفحوص تجري محليًا (npm run check وخطّاف pre-push). هذا السير يدوي فقط،
-# لأن Actions لا تعمل على المستودع الخاص بسبب الفوترة.
+# الفحوص اليومية تجري محليًا (npm run check وخطّاف pre-push). هذا السير يدوي فقط:
+#   gh workflow run ci.yml --ref main
 on:
   workflow_dispatch:
 
